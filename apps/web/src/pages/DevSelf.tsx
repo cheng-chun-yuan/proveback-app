@@ -4,7 +4,7 @@ import type { VerifySession } from '@proveback/contract';
 import { api } from '../api/client';
 import { useAction, useLoad } from '../lib/hooks';
 import { failureLabel } from '../lib/labels';
-import { DevTag, ErrorBox, FormError, Loading } from '../components/ui';
+import { ErrorBox, FormError, Loading } from '../components/ui';
 
 export function DevSelfPage() {
   const { sessionId = '' } = useParams();
@@ -34,7 +34,6 @@ export function DevSelfPage() {
   return (
     <div className="center-page">
       <div className="card card-narrow">
-        <DevTag>Simulation: this is not the real Self app</DevTag>
         <h1>Simulated Self app</h1>
         {session.loading && <Loading />}
         {session.error && <ErrorBox message={session.error} onRetry={session.reload} />}
@@ -47,10 +46,11 @@ export function DevSelfPage() {
         )}
         {session.data && !done && (
           <form onSubmit={submit}>
-            <p className="hint">Self is not configured on the backend, so this form simulates submitting a passport proof. The same passport number means the same passport.</p>
+            <p className="hint"><strong>Simulation, not the real Self app.</strong> Self is not configured on the backend, so this form simulates submitting a passport proof. The same passport number means the same passport.</p>
             <label className="field">
-              <span className="field-label">Passport number (only used to tell whether it is the same passport)</span>
+              <span className="field-label">Passport number</span>
               <input required value={form.passportId} onChange={(e) => set('passportId', e.target.value)} />
+              <span className="field-hint">Only used to tell whether it is the same passport.</span>
             </label>
             <label className="field">
               <span className="field-label">Name on passport</span>

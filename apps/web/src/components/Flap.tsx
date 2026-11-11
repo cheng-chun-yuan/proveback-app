@@ -16,7 +16,7 @@ const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(pr
 
 export type FlapTone = 'paint' | 'ok' | 'now' | 'bad' | 'dim';
 
-export function Flap({ text, cells, tone = 'paint', size = 'md' }: { text: string; cells: number; tone?: FlapTone; size?: 'sm' | 'md' | 'lg' }) {
+export function Flap({ text, cells, tone = 'paint', size = 'md' }: { text: string; cells: number; tone?: FlapTone; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
   const target = useMemo(() => fit(text, cells), [text, cells]);
   const [shown, setShown] = useState<string[]>(() => Array<string>(cells).fill(' '));
   const prev = useRef<string[]>(Array<string>(cells).fill(' '));

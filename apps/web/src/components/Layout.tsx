@@ -45,7 +45,7 @@ export function WorkspaceLayout() {
           >
             {!workspace && <option value="">Choose a workspace</option>}
             {me.data.workspaces.map((w) => (
-              <option key={w.id} value={w.id}>{w.name}{w.type === 'personal' ? ' (personal)' : ''}</option>
+              <option key={w.id} value={w.id}>{w.name}</option>
             ))}
           </select>
           <span className="topbar-user">

@@ -7,7 +7,8 @@ import { useAction, useLoad } from '../lib/hooks';
 import { boardTone, boardWord, botLabel, botTone, failureLabel, formatTime, kindLabel, meetingLabel } from '../lib/labels';
 import { useWorkspace } from '../components/Layout';
 import { Flap } from '../components/Flap';
-import { CopyField, DevTag, Empty, ErrorBox, FormError, Loading } from '../components/ui';
+import { BoardRow, NAME_CELLS } from '../components/BoardRow';
+import { CopyField, Empty, ErrorBox, FormError, Loading } from '../components/ui';
 
 function applyEvent(prev: MeetingDetail, e: HostEvent): MeetingDetail {
   switch (e.type) {
@@ -57,15 +58,24 @@ function ParticipantRow({ p, mtgId, fakeRecall }: { p: Participant; mtgId: strin
   const v = p.verification;
   const canReset = p.kind === 'guest' && v.status !== 'unverified';
   const canLeave = fakeRecall && !p.leftAt && p.kind !== 'bot';
+  // The cells already say MEMBER or BOT, so the line beneath only names the kind for guests.
+  const meta = [
+    p.displayName.length > NAME_CELLS ? p.displayName : null,
+    p.kind === 'guest' ? kindLabel[p.kind] : null,
+    v.returning ? 'Returning' : null,
+    p.leftAt ? 'Left' : null,
+  ].filter(Boolean).join(' · ');
   return (
     <li className={`participant ${p.leftAt ? 'is-left' : ''}`}>
-      <div className="participant-head">
-        <strong>{p.displayName}</strong>
-        <span className="kind">{kindLabel[p.kind]}{v.returning ? ' · Returning' : ''}{p.leftAt ? ' · Left' : ''}</span>
-        {p.kind === 'guest' && <Flap text={boardWord[v.status]} cells={9} tone={boardTone[v.status]} size="sm" />}
-        {p.kind === 'member' && <Flap text="MEMBER" cells={9} size="sm" />}
-      </div>
+      <BoardRow
+        size="md"
+        name={p.displayName}
+        status={p.kind === 'guest' ? boardWord[v.status] : p.kind === 'member' ? 'MEMBER' : 'BOT'}
+        tone={p.kind === 'guest' ? boardTone[v.status] : p.kind === 'member' ? 'paint' : 'dim'}
+        lamp={p.kind === 'guest' ? boardTone[v.status] : p.kind === 'member' ? 'ok' : 'off'}
+      />
       <div className="participant-detail">
+        {meta && <span className="kind">{meta}</span>}
         {p.kind === 'member' && <span className="muted">Workspace member, recognised by Google account. No passport check needed.</span>}
         {p.kind === 'bot' && <span className="muted">Shows the QR code and the board as its camera.</span>}
         {p.kind === 'guest' && v.status === 'unverified' && <span className="muted">Has not started verifying.</span>}
@@ -103,9 +113,8 @@ function DevJoinPanel({ mtgId }: { mtgId: string }) {
   };
   return (
     <section className="card dev-card">
-      <DevTag>Simulation: the API is not connected to Recall.ai</DevTag>
       <h2>Simulate someone joining</h2>
-      <p className="hint">Pretend someone enters the Google Meet call. With a workspace member's email they join as a member, otherwise as a guest.</p>
+      <p className="hint"><strong>Simulation.</strong> The API is not connected to Recall.ai. Pretend someone enters the Google Meet call. With a workspace member's email they join as a member, otherwise as a guest.</p>
       <form className="inline-form" onSubmit={submit}>
         <input required placeholder="Display name" aria-label="Display name" value={displayName} onChange={(e) => setName(e.target.value)} />
         <input type="email" placeholder="Email (optional)" aria-label="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -160,7 +169,7 @@ export function MeetingDetailPage() {
         </div>
         <p className="head-state" role="status">
           <span className={`lamp lamp-${stream === 'open' ? 'ok' : 'now'}`} aria-hidden />
-          {meetingLabel[meeting.status]} · {stream === 'open' ? 'Updating live' : 'Reconnecting…'}
+          {meetingLabel[meeting.status]}{stream === 'open' ? '' : ' · Reconnecting…'}
         </p>
       </div>
 
@@ -180,8 +189,8 @@ export function MeetingDetailPage() {
 
           <section className="card">
             <h2>Links</h2>
-            <CopyField label="Guest page (the QR on the board points here)" value={location.origin + webRoutes.join(meeting.joinToken)} />
-            <CopyField label="Board (the bot's camera)" value={location.origin + webRoutes.botScreen(meeting.joinToken)} />
+            <CopyField label="Guest page" hint="The QR code on the board points here." value={location.origin + webRoutes.join(meeting.joinToken)} />
+            <CopyField label="Board" hint="The bot shows this page as its camera." value={location.origin + webRoutes.botScreen(meeting.joinToken)} />
           </section>
 
           {dev?.fake.recall && <DevJoinPanel mtgId={meeting.id} />}

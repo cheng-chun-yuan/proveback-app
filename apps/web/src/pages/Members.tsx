@@ -93,7 +93,7 @@ export function MembersPage() {
               <li key={m.userId} className="row-block">
                 <div className="row-main">
                   <strong>
-                    {m.name} {m.userId === me.user.id && <Chip>You</Chip>} {m.status === 'invited' && <Chip tone="warn">Invited, not signed in yet</Chip>}
+                    {m.name} {m.userId === me.user.id && <Chip>You</Chip>} {m.status === 'invited' && <Chip>Invited, not signed in yet</Chip>}
                   </strong>
                   <span className="muted">{m.email}</span>
                 </div>

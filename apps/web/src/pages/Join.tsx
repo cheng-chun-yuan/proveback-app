@@ -5,7 +5,7 @@ import { api, errorMessage } from '../api/client';
 import { useAction } from '../lib/hooks';
 import { boardTone, boardWord, failureLabel } from '../lib/labels';
 import { usePublicMeeting } from '../lib/usePublicMeeting';
-import { Flap } from '../components/Flap';
+import { BoardRow } from '../components/BoardRow';
 import { CheckIcon, ErrorBox, FormError, Loading, Qr, StatusBadge } from '../components/ui';
 
 type Step = 'pick' | 'consent' | 'verify' | 'result';
@@ -112,14 +112,13 @@ export function JoinPage() {
       <header className="join-head">
         <h1>{m.title}</h1>
         <p>Hosted by {m.workspaceName}</p>
-      </header>
-      <main className="join-body">
         {rowStatus && (
           <div className="my-row">
-            <Flap text={who?.displayName ?? 'YOU'} cells={12} size="md" />
-            <Flap text={boardWord[rowStatus]} cells={9} tone={boardTone[rowStatus]} size="md" />
+            <BoardRow stack size="md" name={who?.displayName ?? 'YOU'} status={boardWord[rowStatus]} tone={boardTone[rowStatus]} lamp={boardTone[rowStatus]} />
           </div>
         )}
+      </header>
+      <main className="join-body">
 
         {step === 'pick' && (
           <>

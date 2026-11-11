@@ -4,6 +4,7 @@ import { webRoutes, type PublicParticipant } from '@proveback/contract';
 import { usePublicMeeting } from '../lib/usePublicMeeting';
 import { boardTone, boardWord } from '../lib/labels';
 import { Flap } from '../components/Flap';
+import { BoardRow } from '../components/BoardRow';
 import { Qr } from '../components/ui';
 
 // Recall streams this page as the bot's camera: 1280x720 at 15 fps, usually seen as a small tile.
@@ -11,8 +12,6 @@ import { Qr } from '../components/ui';
 const W = 1280;
 const H = 720;
 const MAX_ROWS = 8;
-const NAME_CELLS = 14;
-const STATUS_CELLS = 9;
 
 const order = { pending: 0, unverified: 1, failed: 2, verified: 3 } as const;
 
@@ -47,6 +46,8 @@ export function BotScreenPage() {
   const sorted: PublicParticipant[] = people.length > MAX_ROWS ? [...people].sort((a, b) => order[a.status] - order[b.status]) : people;
   const shown = sorted.slice(0, people.length > MAX_ROWS ? MAX_ROWS - 1 : MAX_ROWS);
   const hidden = sorted.slice(shown.length);
+  const slots: (PublicParticipant | 'more' | null)[] = [...shown, ...(hidden.length ? (['more'] as const) : [])];
+  while (slots.length < MAX_ROWS) slots.push(null);
 
   return (
     <div className="bot-viewport">
@@ -63,7 +64,7 @@ export function BotScreenPage() {
               <section className="bot-plate">
                 <div className="bot-qr"><Qr text={location.origin + webRoutes.join(joinToken)} size={316} /></div>
                 <p className="bot-instruction">Scan to verify</p>
-                <p className="bot-sub">Guests: prove who you are with your passport. Only the result is shared.</p>
+                <p className="bot-sub">Only the result is shared.</p>
                 <p className="bot-brand">ProveBack</p>
               </section>
               <section className="bot-main">
@@ -72,30 +73,27 @@ export function BotScreenPage() {
                   <span>{meeting.data.workspaceName}</span>
                   <strong>{verified} / {guests.length} verified</strong>
                 </div>
-                {people.length === 0 ? (
-                  <p className="bot-empty">Waiting for guests to join the call</p>
-                ) : (
-                  <>
-                    <div className="bot-cols" aria-hidden><span>Guest</span><span>Status</span></div>
-                    <ul className="bot-list">
-                      {shown.map((p) => {
-                        const tone = p.kind === 'member' ? 'paint' : boardTone[p.status];
-                        return (
-                          <li key={p.id} className="bot-row">
-                            <span className={`lamp lamp-${p.kind === 'member' ? 'ok' : boardTone[p.status]}`} aria-hidden />
-                            <Flap text={p.displayName} cells={NAME_CELLS} size="lg" />
-                            <Flap text={p.kind === 'member' ? 'MEMBER' : boardWord[p.status]} cells={STATUS_CELLS} tone={tone} size="lg" />
-                          </li>
-                        );
-                      })}
-                      {hidden.length > 0 && (
-                        <li className="bot-more">
-                          + {hidden.length} more · {hidden.filter((p) => p.status === 'verified').length} verified
-                        </li>
-                      )}
-                    </ul>
-                  </>
-                )}
+                <div className="bot-cols" aria-hidden><span>Guest</span><span>Status</span></div>
+                <ul className="bot-list">
+                  {slots.map((p, i) =>
+                    p === 'more' ? (
+                      <li key="more"><BoardRow size="xl" name={`+ ${hidden.length} MORE`} status="" tone="dim" /></li>
+                    ) : p ? (
+                      <li key={p.id}>
+                        <BoardRow
+                          size="xl"
+                          name={p.displayName}
+                          status={p.kind === 'member' ? 'MEMBER' : boardWord[p.status]}
+                          tone={p.kind === 'member' ? 'paint' : boardTone[p.status]}
+                          lamp={p.kind === 'member' ? 'ok' : boardTone[p.status]}
+                        />
+                      </li>
+                    ) : (
+                      // Empty slots stay on the board as blank cells, so the board is whole before anyone joins.
+                      <li key={`blank-${i}`} aria-hidden><BoardRow size="xl" name="" status="" /></li>
+                    ),
+                  )}
+                </ul>
               </section>
             </>
           )}

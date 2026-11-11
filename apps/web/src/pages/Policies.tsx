@@ -44,8 +44,9 @@ function PolicyForm({ initial, submitLabel, onSubmit, onCancel }: {
         Require guests not to be on a sanctions list (OFAC)
       </label>
       <label className="field">
-        <span className="field-label">Excluded countries (ISO codes, e.g. PRK, IRN)</span>
+        <span className="field-label">Excluded countries</span>
         <input value={countries} placeholder="PRK, IRN" onChange={(e) => setCountries(e.target.value)} />
+        <span className="field-hint">Three-letter ISO codes, separated by commas.</span>
         {parsed.invalid.length > 0 && <span className="form-error">Not a 3-letter country code: {parsed.invalid.join(', ')}</span>}
       </label>
       <label className="check">

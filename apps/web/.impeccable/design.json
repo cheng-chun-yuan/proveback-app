@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T22:30:00Z",
+  "title": "Design System: ProveBack",
+  "extensions": {
+    "colorMeta": {
+      "board": {
+        "role": "primary",
+        "displayName": "Board Black",
+        "canonical": "oklch(19.1% 0.006 271)",
+        "tonalRamp": [
+          "oklch(15% 0.003 271)",
+          "oklch(26% 0.004 271)",
+          "oklch(38% 0.005 271)",
+          "oklch(50% 0.006 271)",
+          "oklch(62% 0.006 271)",
+          "oklch(74% 0.005 271)",
+          "oklch(85% 0.004 271)",
+          "oklch(95% 0.003 271)"
+        ]
+      },
+      "board-2": {
+        "role": "neutral",
+        "displayName": "Board Shade",
+        "canonical": "oklch(23.0% 0.007 258)",
+        "tonalRamp": [
+          "oklch(15% 0.003 258)",
+          "oklch(26% 0.004 258)",
+          "oklch(38% 0.005 258)",
+          "oklch(50% 0.006 258)",
+          "oklch(62% 0.006 258)",
+          "oklch(74% 0.005 258)",
+          "oklch(85% 0.004 258)",
+          "oklch(95% 0.003 258)"
+        ]
+      },
+      "cell": {
+        "role": "neutral",
+        "displayName": "Cell",
+        "canonical": "oklch(25.2% 0.008 264)",
+        "tonalRamp": [
+          "oklch(15% 0.004 264)",
+          "oklch(26% 0.005 264)",
+          "oklch(38% 0.006 264)",
+          "oklch(50% 0.008 264)",
+          "oklch(62% 0.007 264)",
+          "oklch(74% 0.006 264)",
+          "oklch(85% 0.005 264)",
+          "oklch(95% 0.004 264)"
+        ]
+      },
+      "cell-edge": {
+        "role": "neutral",
+        "displayName": "Cell Edge",
+        "canonical": "oklch(35.2% 0.011 264)",
+        "tonalRamp": [
+          "oklch(15% 0.006 264)",
+          "oklch(26% 0.007 264)",
+          "oklch(38% 0.009 264)",
+          "oklch(50% 0.011 264)",
+          "oklch(62% 0.010 264)",
+          "oklch(74% 0.009 264)",
+          "oklch(85% 0.007 264)",
+          "oklch(95% 0.006 264)"
+        ]
+      },
+      "paint": {
+        "role": "primary",
+        "displayName": "Paint White",
+        "canonical": "oklch(95.5% 0.011 90)",
+        "tonalRamp": [
+          "oklch(15% 0.006 90)",
+          "oklch(26% 0.007 90)",
+          "oklch(38% 0.009 90)",
+          "oklch(50% 0.010 90)",
+          "oklch(62% 0.010 90)",
+          "oklch(74% 0.009 90)",
+          "oklch(85% 0.007 90)",
+          "oklch(95% 0.006 90)"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
+        "canonical": "oklch(69.6% 0.014 252)",
+        "tonalRamp": [
+          "oklch(15% 0.007 252)",
+          "oklch(26% 0.009 252)",
+          "oklch(38% 0.011 252)",
+          "oklch(50% 0.013 252)",
+          "oklch(62% 0.013 252)",
+          "oklch(74% 0.011 252)",
+          "oklch(85% 0.009 252)",
+          "oklch(95% 0.007 252)"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Signal Amber",
+        "canonical": "oklch(78.4% 0.159 76)",
+        "tonalRamp": [
+          "oklch(15% 0.084 76)",
+          "oklch(26% 0.104 76)",
+          "oklch(38% 0.127 76)",
+          "oklch(50% 0.149 76)",
+          "oklch(62% 0.146 76)",
+          "oklch(74% 0.123 76)",
+          "oklch(85% 0.103 76)",
+          "oklch(95% 0.084 76)"
+        ]
+      },
+      "amber-ink": {
+        "role": "secondary",
+        "displayName": "Amber Ink",
+        "canonical": "oklch(25.4% 0.052 85)",
+        "tonalRamp": [
+          "oklch(15% 0.027 85)",
+          "oklch(26% 0.034 85)",
+          "oklch(38% 0.042 85)",
+          "oklch(50% 0.049 85)",
+          "oklch(62% 0.048 85)",
+          "oklch(74% 0.040 85)",
+          "oklch(85% 0.034 85)",
+          "oklch(95% 0.027 85)"
+        ]
+      },
+      "red": {
+        "role": "tertiary",
+        "displayName": "Stop Red",
+        "canonical": "oklch(51.8% 0.178 29)",
+        "tonalRamp": [
+          "oklch(15% 0.094 29)",
+          "oklch(26% 0.117 29)",
+          "oklch(38% 0.143 29)",
+          "oklch(50% 0.168 29)",
+          "oklch(62% 0.164 29)",
+          "oklch(74% 0.138 29)",
+          "oklch(85% 0.115 29)",
+          "oklch(95% 0.094 29)"
+        ]
+      },
+      "red-on-board": {
+        "role": "tertiary",
+        "displayName": "Stop Red on Board",
+        "canonical": "oklch(69.5% 0.161 29)",
+        "tonalRamp": [
+          "oklch(15% 0.085 29)",
+          "oklch(26% 0.106 29)",
+          "oklch(38% 0.129 29)",
+          "oklch(50% 0.152 29)",
+          "oklch(62% 0.148 29)",
+          "oklch(74% 0.125 29)",
+          "oklch(85% 0.104 29)",
+          "oklch(95% 0.085 29)"
+        ]
+      },
+      "steel": {
+        "role": "neutral",
+        "displayName": "Brushed Steel",
+        "canonical": "oklch(90.2% 0.004 237)",
+        "tonalRamp": [
+          "oklch(15% 0.002 237)",
+          "oklch(26% 0.003 237)",
+          "oklch(38% 0.003 237)",
+          "oklch(50% 0.004 237)",
+          "oklch(62% 0.004 237)",
+          "oklch(74% 0.003 237)",
+          "oklch(85% 0.003 237)",
+          "oklch(95% 0.002 237)"
+        ]
+      },
+      "steel-frame": {
+        "role": "neutral",
+        "displayName": "Steel Frame",
+        "canonical": "oklch(77.0% 0.008 242)",
+        "tonalRamp": [
+          "oklch(15% 0.004 242)",
+          "oklch(26% 0.005 242)",
+          "oklch(38% 0.006 242)",
+          "oklch(50% 0.008 242)",
+          "oklch(62% 0.007 242)",
+          "oklch(74% 0.006 242)",
+          "oklch(85% 0.005 242)",
+          "oklch(95% 0.004 242)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "oklch(96.6% 0.004 106)",
+        "tonalRamp": [
+          "oklch(15% 0.002 106)",
+          "oklch(26% 0.003 106)",
+          "oklch(38% 0.003 106)",
+          "oklch(50% 0.004 106)",
+          "oklch(62% 0.004 106)",
+          "oklch(74% 0.003 106)",
+          "oklch(85% 0.003 106)",
+          "oklch(95% 0.002 106)"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field",
+        "canonical": "oklch(99.1% 0.003 106)",
+        "tonalRamp": [
+          "oklch(15% 0.001 106)",
+          "oklch(26% 0.002 106)",
+          "oklch(38% 0.002 106)",
+          "oklch(50% 0.002 106)",
+          "oklch(62% 0.002 106)",
+          "oklch(74% 0.002 106)",
+          "oklch(85% 0.002 106)",
+          "oklch(95% 0.001 106)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "oklch(76.5% 0.010 253)",
+        "tonalRamp": [
+          "oklch(15% 0.005 253)",
+          "oklch(26% 0.007 253)",
+          "oklch(38% 0.008 253)",
+          "oklch(50% 0.010 253)",
+          "oklch(62% 0.009 253)",
+          "oklch(74% 0.008 253)",
+          "oklch(85% 0.007 253)",
+          "oklch(95% 0.005 253)"
+        ]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Rule Soft",
+        "canonical": "oklch(84.6% 0.007 248)",
+        "tonalRamp": [
+          "oklch(15% 0.004 248)",
+          "oklch(26% 0.005 248)",
+          "oklch(38% 0.006 248)",
+          "oklch(50% 0.007 248)",
+          "oklch(62% 0.007 248)",
+          "oklch(74% 0.005 248)",
+          "oklch(85% 0.005 248)",
+          "oklch(95% 0.004 248)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(20.8% 0.007 258)",
+        "tonalRamp": [
+          "oklch(15% 0.004 258)",
+          "oklch(26% 0.004 258)",
+          "oklch(38% 0.005 258)",
+          "oklch(50% 0.006 258)",
+          "oklch(62% 0.006 258)",
+          "oklch(74% 0.005 258)",
+          "oklch(85% 0.004 258)",
+          "oklch(95% 0.004 258)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "oklch(41.0% 0.013 248)",
+        "tonalRamp": [
+          "oklch(15% 0.007 248)",
+          "oklch(26% 0.008 248)",
+          "oklch(38% 0.010 248)",
+          "oklch(50% 0.012 248)",
+          "oklch(62% 0.012 248)",
+          "oklch(74% 0.010 248)",
+          "oklch(85% 0.008 248)",
+          "oklch(95% 0.007 248)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Meeting title on the 1280x720 bot tile."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page h1, closed by a 2px ink rule."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Sentences, form values, list text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, chips, badges, buttons, tabs; always uppercase."
+      },
+      "flap": {
+        "displayName": "Flap",
+        "purpose": "One glyph per split-flap cell (md size shown; sm 17px, lg 36px, xl 40px)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "cell-edge",
+        "value": "inset 0 1px 0 #383b41",
+        "purpose": "Lit top edge of a flap cell; removed on a verified cell."
+      },
+      {
+        "name": "keyline",
+        "value": "inset 0 0 0 1px #aeb3b9",
+        "purpose": "Border drawn inside outlined chips and the waiting badge (ink for the info chip). A line, not depth."
+      },
+      {
+        "name": "keyline-selected",
+        "value": "inset 0 0 0 2px #16181b",
+        "purpose": "Selected option in the guest pick list."
+      }
+    ],
+    "motion": [
+      {
+        "name": "cascade-step",
+        "value": "66ms",
+        "purpose": "One intermediate glyph per step in a changing cell; one frame of the 15 fps bot stream. 3 to 5 steps per cell."
+      },
+      {
+        "name": "cascade-stagger",
+        "value": "45ms",
+        "purpose": "Delay added per cell, left to right."
+      },
+      {
+        "name": "flap-land",
+        "value": "80ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Each glyph change lands from scaleY(0.25) and brightness(0.55)."
+      },
+      {
+        "name": "button-hover",
+        "value": "120ms ease-out",
+        "purpose": "Button background tint; press is an 80ms 1px translate."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Cascade sets text immediately; landing and button transitions are off."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "guest-narrow",
+        "value": "359px"
+      },
+      {
+        "name": "row-stack",
+        "value": "720px"
+      },
+      {
+        "name": "split-collapse",
+        "value": "860px"
+      },
+      {
+        "name": "content-max",
+        "value": "1160px"
+      },
+      {
+        "name": "bot-stage",
+        "value": "1280x720 fixed, scaled to fit"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Board Row: Verified",
+      "kind": "custom",
+      "refersTo": "board-row",
+      "description": "The shared line of the board: lamp, 12 name cells, 9 status cells on board black. Verified is the inverted paint-white cell.",
+      "html": "<span class=\"ds-board-row\"><span class=\"ds-lamp ds-lamp-ok\"></span><span class=\"ds-flap\"><i>K</i><i>E</i><i>N</i><i>&nbsp;</i><i>S</i><i>A</i><i>T</i><i>O</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i></span><span class=\"ds-flap ds-flap-ok\"><i>V</i><i>E</i><i>R</i><i>I</i><i>F</i><i>I</i><i>E</i><i>D</i><i>&nbsp;</i></span></span>",
+      "css": ".ds-board-row { display: inline-grid; grid-template-columns: auto auto auto; align-items: center; gap: 6px 10px; background: var(--board, #131417); padding: 5px 8px; border-radius: 3px; max-width: 100%; } .ds-lamp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--dim, #979ea6); } .ds-lamp-ok { background: var(--paint, #f3f0e8); border-color: var(--paint, #f3f0e8); } .ds-lamp-now { background: var(--amber, #f2a81d); border-color: var(--amber, #f2a81d); } .ds-lamp-bad { background: var(--red-on-board, #f0705f); border-color: var(--red-on-board, #f0705f); } .ds-flap { display: inline-flex; gap: 2px; vertical-align: middle; } .ds-flap i { position: relative; width: 23px; height: 38px; font: 600 28px/38px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-style: normal; text-align: center; color: var(--paint, #f3f0e8); background: var(--cell, #202226); border-radius: 2px; box-shadow: inset 0 1px 0 var(--cell-edge, #383b41); animation: ds-flap-land 80ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flap i::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.6); } @keyframes ds-flap-land { from { transform: scaleY(0.25); filter: brightness(0.55); } } .ds-flap-ok i { background: var(--paint, #f3f0e8); color: var(--board, #131417); box-shadow: none; } .ds-flap-ok i::after { background: rgb(0 0 0 / 0.22); } .ds-flap-now i { color: var(--amber, #f2a81d); } .ds-flap-bad i { color: var(--red-on-board, #f0705f); } .ds-flap-dim i { color: var(--dim, #979ea6); } @media (prefers-reduced-motion: reduce) { .ds-flap i { animation: none; } } "
+    },
+    {
+      "name": "Board Row: Scanning",
+      "kind": "custom",
+      "refersTo": "flap-cell-now",
+      "description": "Amber letters and lamp for the step happening now.",
+      "html": "<span class=\"ds-board-row\"><span class=\"ds-lamp ds-lamp-now\"></span><span class=\"ds-flap\"><i>M</i><i>I</i><i>A</i><i>&nbsp;</i><i>W</i><i>O</i><i>N</i><i>G</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i></span><span class=\"ds-flap ds-flap-now\"><i>S</i><i>C</i><i>A</i><i>N</i><i>N</i><i>I</i><i>N</i><i>G</i><i>&nbsp;</i></span></span>",
+      "css": ".ds-board-row { display: inline-grid; grid-template-columns: auto auto auto; align-items: center; gap: 6px 10px; background: var(--board, #131417); padding: 5px 8px; border-radius: 3px; max-width: 100%; } .ds-lamp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--dim, #979ea6); } .ds-lamp-ok { background: var(--paint, #f3f0e8); border-color: var(--paint, #f3f0e8); } .ds-lamp-now { background: var(--amber, #f2a81d); border-color: var(--amber, #f2a81d); } .ds-lamp-bad { background: var(--red-on-board, #f0705f); border-color: var(--red-on-board, #f0705f); } .ds-flap { display: inline-flex; gap: 2px; vertical-align: middle; } .ds-flap i { position: relative; width: 23px; height: 38px; font: 600 28px/38px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-style: normal; text-align: center; color: var(--paint, #f3f0e8); background: var(--cell, #202226); border-radius: 2px; box-shadow: inset 0 1px 0 var(--cell-edge, #383b41); animation: ds-flap-land 80ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flap i::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.6); } @keyframes ds-flap-land { from { transform: scaleY(0.25); filter: brightness(0.55); } } .ds-flap-ok i { background: var(--paint, #f3f0e8); color: var(--board, #131417); box-shadow: none; } .ds-flap-ok i::after { background: rgb(0 0 0 / 0.22); } .ds-flap-now i { color: var(--amber, #f2a81d); } .ds-flap-bad i { color: var(--red-on-board, #f0705f); } .ds-flap-dim i { color: var(--dim, #979ea6); } @media (prefers-reduced-motion: reduce) { .ds-flap i { animation: none; } } "
+    },
+    {
+      "name": "Board Row: Try Again",
+      "kind": "custom",
+      "refersTo": "flap-cell-failed",
+      "description": "A failed row: red-on-board letters and lamp, and the words TRY AGAIN.",
+      "html": "<span class=\"ds-board-row\"><span class=\"ds-lamp ds-lamp-bad\"></span><span class=\"ds-flap\"><i>Z</i><i>O</i><i>E</i><i>&nbsp;</i><i>W</i><i>A</i><i>N</i><i>G</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i><i>&nbsp;</i></span><span class=\"ds-flap ds-flap-bad\"><i>T</i><i>R</i><i>Y</i><i>&nbsp;</i><i>A</i><i>G</i><i>A</i><i>I</i><i>N</i></span></span>",
+      "css": ".ds-board-row { display: inline-grid; grid-template-columns: auto auto auto; align-items: center; gap: 6px 10px; background: var(--board, #131417); padding: 5px 8px; border-radius: 3px; max-width: 100%; } .ds-lamp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--dim, #979ea6); } .ds-lamp-ok { background: var(--paint, #f3f0e8); border-color: var(--paint, #f3f0e8); } .ds-lamp-now { background: var(--amber, #f2a81d); border-color: var(--amber, #f2a81d); } .ds-lamp-bad { background: var(--red-on-board, #f0705f); border-color: var(--red-on-board, #f0705f); } .ds-flap { display: inline-flex; gap: 2px; vertical-align: middle; } .ds-flap i { position: relative; width: 23px; height: 38px; font: 600 28px/38px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-style: normal; text-align: center; color: var(--paint, #f3f0e8); background: var(--cell, #202226); border-radius: 2px; box-shadow: inset 0 1px 0 var(--cell-edge, #383b41); animation: ds-flap-land 80ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flap i::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.6); } @keyframes ds-flap-land { from { transform: scaleY(0.25); filter: brightness(0.55); } } .ds-flap-ok i { background: var(--paint, #f3f0e8); color: var(--board, #131417); box-shadow: none; } .ds-flap-ok i::after { background: rgb(0 0 0 / 0.22); } .ds-flap-now i { color: var(--amber, #f2a81d); } .ds-flap-bad i { color: var(--red-on-board, #f0705f); } .ds-flap-dim i { color: var(--dim, #979ea6); } @media (prefers-reduced-motion: reduce) { .ds-flap i { animation: none; } } "
+    },
+    {
+      "name": "Board Row: Waiting",
+      "kind": "custom",
+      "refersTo": "flap-cell-waiting",
+      "description": "A guest who has not started: dim letters, ring lamp.",
+      "html": "<span class=\"ds-board-row\"><span class=\"ds-lamp ds-lamp-dim\"></span><span class=\"ds-flap\"><i>I</i><i>V</i><i>A</i><i>N</i><i>&nbsp;</i><i>P</i><i>E</i><i>T</i><i>R</i><i>O</i><i>V</i><i>&nbsp;</i></span><span class=\"ds-flap ds-flap-dim\"><i>W</i><i>A</i><i>I</i><i>T</i><i>I</i><i>N</i><i>G</i><i>&nbsp;</i><i>&nbsp;</i></span></span>",
+      "css": ".ds-board-row { display: inline-grid; grid-template-columns: auto auto auto; align-items: center; gap: 6px 10px; background: var(--board, #131417); padding: 5px 8px; border-radius: 3px; max-width: 100%; } .ds-lamp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--dim, #979ea6); } .ds-lamp-ok { background: var(--paint, #f3f0e8); border-color: var(--paint, #f3f0e8); } .ds-lamp-now { background: var(--amber, #f2a81d); border-color: var(--amber, #f2a81d); } .ds-lamp-bad { background: var(--red-on-board, #f0705f); border-color: var(--red-on-board, #f0705f); } .ds-flap { display: inline-flex; gap: 2px; vertical-align: middle; } .ds-flap i { position: relative; width: 23px; height: 38px; font: 600 28px/38px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-style: normal; text-align: center; color: var(--paint, #f3f0e8); background: var(--cell, #202226); border-radius: 2px; box-shadow: inset 0 1px 0 var(--cell-edge, #383b41); animation: ds-flap-land 80ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flap i::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.6); } @keyframes ds-flap-land { from { transform: scaleY(0.25); filter: brightness(0.55); } } .ds-flap-ok i { background: var(--paint, #f3f0e8); color: var(--board, #131417); box-shadow: none; } .ds-flap-ok i::after { background: rgb(0 0 0 / 0.22); } .ds-flap-now i { color: var(--amber, #f2a81d); } .ds-flap-bad i { color: var(--red-on-board, #f0705f); } .ds-flap-dim i { color: var(--dim, #979ea6); } @media (prefers-reduced-motion: reduce) { .ds-flap i { animation: none; } } "
+    },
+    {
+      "name": "Flap on a light surface",
+      "kind": "custom",
+      "refersTo": "flap-cell",
+      "description": "A lone Flap (bot state on the host page) sits in its own strip of board black.",
+      "html": "<span class=\"ds-flap-strip\"><span class=\"ds-flap ds-flap-sm ds-flap-ok\"><i>I</i><i>N</i><i>&nbsp;</i><i>M</i><i>E</i><i>E</i><i>T</i><i>I</i><i>N</i><i>G</i><i>&nbsp;</i><i>&nbsp;</i></span></span>",
+      "css": ".ds-flap { display: inline-flex; gap: 2px; vertical-align: middle; } .ds-flap i { position: relative; width: 23px; height: 38px; font: 600 28px/38px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); font-style: normal; text-align: center; color: var(--paint, #f3f0e8); background: var(--cell, #202226); border-radius: 2px; box-shadow: inset 0 1px 0 var(--cell-edge, #383b41); animation: ds-flap-land 80ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flap i::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgb(0 0 0 / 0.6); } @keyframes ds-flap-land { from { transform: scaleY(0.25); filter: brightness(0.55); } } .ds-flap-ok i { background: var(--paint, #f3f0e8); color: var(--board, #131417); box-shadow: none; } .ds-flap-ok i::after { background: rgb(0 0 0 / 0.22); } .ds-flap-now i { color: var(--amber, #f2a81d); } .ds-flap-bad i { color: var(--red-on-board, #f0705f); } .ds-flap-dim i { color: var(--dim, #979ea6); } @media (prefers-reduced-motion: reduce) { .ds-flap i { animation: none; } } .ds-flap-sm i { width: 15px; height: 24px; font-size: 17px; line-height: 24px; } .ds-flap-strip { display: inline-flex; background: var(--board, #131417); padding: 3px; border-radius: 3px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Board-black key for the main action of a form or step.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Create meeting</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink, #16181b); background: transparent; border: 1px solid var(--ink, #16181b); border-radius: 4px; padding: 11px 18px; cursor: pointer; transition: background 120ms ease-out, transform 80ms ease-out; } .ds-btn:hover { background: rgb(22 24 27 / 0.08); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-btn { transition: none; } } .ds-btn-primary { background: var(--board, #131417); color: var(--paint, #f3f0e8); border-color: var(--board, #131417); } .ds-btn-primary:hover { background: #2b2e33; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Hairline key for secondary actions; small size shown second.",
+      "html": "<button class=\"ds-btn\">Recall bot</button> <button class=\"ds-btn ds-btn-small\">Copy</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink, #16181b); background: transparent; border: 1px solid var(--ink, #16181b); border-radius: 4px; padding: 11px 18px; cursor: pointer; transition: background 120ms ease-out, transform 80ms ease-out; } .ds-btn:hover { background: rgb(22 24 27 / 0.08); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-btn { transition: none; } } .ds-btn-small { font-size: 14px; padding: 7px 11px; }"
+    },
+    {
+      "name": "Danger and Ghost Buttons",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action in stop red; ghost is an underlined, borderless key.",
+      "html": "<button class=\"ds-btn ds-btn-danger\">Delete</button> <button class=\"ds-btn ds-btn-ghost\">Sign out</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink, #16181b); background: transparent; border: 1px solid var(--ink, #16181b); border-radius: 4px; padding: 11px 18px; cursor: pointer; transition: background 120ms ease-out, transform 80ms ease-out; } .ds-btn:hover { background: rgb(22 24 27 / 0.08); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { .ds-btn { transition: none; } } .ds-btn-danger { color: var(--red, #b92d22); border-color: var(--red, #b92d22); } .ds-btn-danger:hover { background: rgb(185 45 34 / 0.1); } .ds-btn-ghost { border-color: transparent; text-decoration: underline; text-underline-offset: 4px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Label in the condensed voice above, input on Field, hint below.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Excluded countries</span><input class=\"ds-input\" placeholder=\"PRK, IRN\"><span class=\"ds-field-hint\">Three-letter ISO codes, separated by commas.</span></label>",
+      "css": ".ds-field { display: grid; gap: 6px; max-width: 320px; } .ds-field-label { font: 600 14px var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2, #454b51); } .ds-field-hint { font: 400 14px var(--f-body, Barlow, system-ui, sans-serif); color: var(--ink-2, #454b51); } .ds-input { font: 400 16px var(--f-body, Barlow, system-ui, sans-serif); color: var(--ink, #16181b); background: var(--field, #fcfcfa); border: 1px solid var(--rule, #aeb3b9); border-radius: 4px; padding: 10px 12px; width: 100%; } .ds-input::placeholder { color: #6a7077; } .ds-input:focus-visible { outline: 2px solid var(--ink, #16181b); outline-offset: 0; border-color: var(--ink, #16181b); }"
+    },
+    {
+      "name": "Chips",
+      "kind": "chip",
+      "refersTo": "chip-neutral",
+      "description": "Facts about a record: neutral keyline, info keyline, board-black good, stop-red bad.",
+      "html": "<span class=\"ds-chip ds-chip-neutral\">No age check</span><span class=\"ds-chip ds-chip-info\">Default</span><span class=\"ds-chip ds-chip-good\">Live</span><span class=\"ds-chip ds-chip-bad\">Revoked</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 14px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.1em; text-transform: uppercase; border-radius: 2px; padding: 5px 8px; white-space: nowrap; margin-right: 6px; } .ds-chip-neutral { color: var(--ink-2, #454b51); box-shadow: inset 0 0 0 1px var(--rule, #aeb3b9); } .ds-chip-info { color: var(--ink, #16181b); box-shadow: inset 0 0 0 1px var(--ink, #16181b); } .ds-chip-good { background: var(--board, #131417); color: var(--paint, #f3f0e8); } .ds-chip-bad { background: var(--red, #b92d22); color: #fff; }"
+    },
+    {
+      "name": "Status Badges",
+      "kind": "chip",
+      "refersTo": "badge-verified",
+      "description": "Verification status where a board row does not fit; the word is always present.",
+      "html": "<span class=\"ds-chip ds-badge-unverified\">Waiting</span><span class=\"ds-chip ds-badge-pending\">Scanning</span><span class=\"ds-chip ds-badge-verified\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\"><path d=\"M3 8.5l3.2 3.2L13 4.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\"/></svg>Verified</span><span class=\"ds-chip ds-badge-failed\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\"><path d=\"M4 4l8 8M12 4l-8 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\"/></svg>Not verified</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 14px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.1em; text-transform: uppercase; border-radius: 2px; padding: 5px 8px; white-space: nowrap; margin-right: 6px; } .ds-badge-unverified { color: var(--ink-2, #454b51); box-shadow: inset 0 0 0 1px var(--rule, #aeb3b9); } .ds-badge-pending { background: var(--amber, #f2a81d); color: var(--amber-ink, #2e2000); } .ds-badge-verified { background: var(--board, #131417); color: var(--paint, #f3f0e8); } .ds-badge-failed { background: var(--red, #b92d22); color: #fff; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Panel on steel with a hairline border; a dashed ink border marks a simulation card.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">Links</h2><p class=\"ds-card-hint\">The QR code on the board points here.</p></section>",
+      "css": ".ds-card { background: var(--panel, #f4f4f1); border: 1px solid var(--rule, #aeb3b9); border-radius: 4px; padding: 22px; max-width: 340px; color: var(--ink, #16181b); } .ds-card-title { font: 600 21px/1.15 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 14px; } .ds-card-hint { font: 400 14px/1.5 var(--f-body, Barlow, system-ui, sans-serif); color: var(--ink-2, #454b51); margin: 0; }"
+    },
+    {
+      "name": "Top Bar Tabs",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Board-black navigation: dim at rest, paint with a 3px underline when active.",
+      "html": "<nav class=\"ds-tabs\"><a href=\"#\" class=\"ds-active\">Meetings</a><a href=\"#\">Policies</a><a href=\"#\">Members</a><a href=\"#\">Guests</a></nav>",
+      "css": ".ds-tabs { display: flex; gap: 4px; background: var(--board, #131417); padding: 0 24px; } .ds-tabs a { font: 600 17px/1 var(--f-cond, 'Barlow Condensed', 'Arial Narrow', sans-serif); letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: var(--dim, #979ea6); padding: 12px 14px 11px; border-bottom: 3px solid transparent; white-space: nowrap; } .ds-tabs a:hover { color: var(--paint, #f3f0e8); } .ds-tabs a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; } .ds-tabs a.ds-active { color: var(--paint, #f3f0e8); border-bottom-color: var(--paint, #f3f0e8); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Concourse Board",
+    "overview": "ProveBack looks like the split-flap departure board in a rail station concourse: the one screen every head in the room lifts to. Names and statuses sit in fixed cells on matte board black, lettered in paint white, and a change of status arrives as a mechanical cascade instead of a colour swap. The bot's 1280x720 camera tile is the board itself; the host dashboard and the guest's phone are the working surfaces around it, on a brushed-steel ground, and each of them carries the same board row so a guest's line reads identically wherever it appears.\n\nThe system is plain, dense and public-facing. It is a piece of shared signage, so it is legible at a glance, through video compression, in a small tile: large condensed capitals, strong contrast, and a word for every state. It must not read as a crypto project and must not read as a government or border-control system. The interface language is English.\n\nColour is rationed. The board is black and white; amber means only \"this step is happening now\"; a dim red marks a row that needs another try; verified is the cell turned over to its white face. There are no gradients, no glow, and no drop shadows.",
+    "keyCharacteristics": [
+      "One shared board row (lamp, 12 name cells, 9 status cells, on board black) on the bot tile, the host's participant list and the guest's phone.",
+      "Split-flap cascade as the only signature motion: 66 ms steps, 45 ms stagger, left to right.",
+      "Board black and paint white for the board; brushed steel, panel and ink for working screens.",
+      "Amber reserved for the step happening now; verified is an inverted paint-white cell, never green.",
+      "Every status is a word; colour and lamp only accompany it.",
+      "Condensed uppercase for anything the board says; a plain companion sans for sentences, forms and tables.",
+      "Flat: no gradients, glow or drop shadows."
+    ],
+    "rules": [
+      {
+        "name": "The Amber Is Now Rule",
+        "body": "Amber is reserved for the step happening now: a guest who is scanning, a bot that is joining or in the waiting room, a live stream that is reconnecting. It is never decoration, never a brand colour, never a generic warning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Turned Flap Rule",
+        "body": "Verified is an inverted cell: paint-white face, board-black letter. It is never green. On light surfaces the same inversion is a board-black badge with paint-white text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Word First Rule",
+        "body": "Status is always carried by a word (WAITING, SCANNING, VERIFIED, TRY AGAIN, MEMBER). The lamp and the colour repeat the word; they never replace it. Lamps are hidden from assistive technology and each cell group carries its text for screen readers.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Condensed uppercase is the board speaking; sentence-case Barlow is a person being told something. Never set a sentence in condensed caps, and never set a status word in body type on the board.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wordmark Rule",
+        "body": "PROVEBACK is set in Barlow Condensed 700, uppercase, tracked wide (0.18em to 0.3em by size). There is no logo mark.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Board Rule",
+        "body": "No gradients, no glow, no drop shadows. The only shadow is the cell's inset edge; any other inset value is a keyline standing in for a border.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the shared board row (lamp, 12 name cells, 9 status cells, on board black) whenever a participant's verification state is shown as a line.",
+      "Do keep status words to nine characters and uppercase, and pair every lamp and colour with its word.",
+      "Do reserve amber for the step happening now.",
+      "Do show verified as an inverted paint-white cell on the board and a board-black badge on light surfaces.",
+      "Do announce a change of state with the cascade (66 ms steps, 45 ms stagger, left to right) and set the text immediately under prefers-reduced-motion.",
+      "Do put a lone Flap on a light surface inside its own strip of board black.",
+      "Do disclose a simulation in the first sentence under the heading.",
+      "Do design the bot tile for 1280x720 at 15 fps seen small: nothing below 22px, no hover, no scrolling.",
+      "Do write the interface in English, in plain sentences."
+    ],
+    "donts": [
+      "Don't use green for verified, or any colour as the only carrier of status.",
+      "Don't use amber for decoration, branding or generic warnings.",
+      "Don't add gradients, glow, blur or drop shadows; the only shadow is the cell's inset edge.",
+      "Don't make it look like a crypto project.",
+      "Don't make it look like a government, customs or border-control system.",
+      "Don't label a simulation with a tag above the heading in place of the sentence under it.",
+      "Don't set flap text in proportional widths or mixed case, or let a row change its cell count.",
+      "Don't set sentences in condensed capitals."
+    ]
+  }
+}
