@@ -7,7 +7,7 @@ import { useAction, useLoad } from '../lib/hooks';
 import { boardTone, boardWord, botLabel, botTone, failureLabel, formatTime, kindLabel, meetingLabel } from '../lib/labels';
 import { useWorkspace } from '../components/Layout';
 import { Flap } from '../components/Flap';
-import { BoardRow, NAME_CELLS } from '../components/BoardRow';
+import { BoardRow } from '../components/BoardRow';
 import { CopyField, Empty, ErrorBox, FormError, Loading } from '../components/ui';
 
 function applyEvent(prev: MeetingDetail, e: HostEvent): MeetingDetail {
@@ -58,9 +58,8 @@ function ParticipantRow({ p, mtgId, fakeRecall }: { p: Participant; mtgId: strin
   const v = p.verification;
   const canReset = p.kind === 'guest' && v.status !== 'unverified';
   const canLeave = fakeRecall && !p.leftAt && p.kind !== 'bot';
-  // The cells already say MEMBER or BOT, so the line beneath only names the kind for guests.
+  // The pill already says Member or Bot, so the line beneath only names the kind for guests.
   const meta = [
-    p.displayName.length > NAME_CELLS ? p.displayName : null,
     p.kind === 'guest' ? kindLabel[p.kind] : null,
     v.returning ? 'Returning' : null,
     p.leftAt ? 'Left' : null,

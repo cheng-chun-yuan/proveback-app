@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { webRoutes, type PublicParticipant } from '@proveback/contract';
 import { usePublicMeeting } from '../lib/usePublicMeeting';
 import { boardTone, boardWord } from '../lib/labels';
-import { Flap } from '../components/Flap';
 import { BoardRow } from '../components/BoardRow';
 import { Qr } from '../components/ui';
 
@@ -28,9 +27,7 @@ function useScale() {
 
 function Notice({ text }: { text: string }) {
   return (
-    <div className="bot-notice">
-      <Flap text={text} cells={Math.max(text.length, 16)} size="lg" />
-    </div>
+    <div className="bot-notice">{text.charAt(0) + text.slice(1).toLowerCase()}</div>
   );
 }
 
@@ -46,8 +43,6 @@ export function BotScreenPage() {
   const sorted: PublicParticipant[] = people.length > MAX_ROWS ? [...people].sort((a, b) => order[a.status] - order[b.status]) : people;
   const shown = sorted.slice(0, people.length > MAX_ROWS ? MAX_ROWS - 1 : MAX_ROWS);
   const hidden = sorted.slice(shown.length);
-  const slots: (PublicParticipant | 'more' | null)[] = [...shown, ...(hidden.length ? (['more'] as const) : [])];
-  while (slots.length < MAX_ROWS) slots.push(null);
 
   return (
     <div className="bot-viewport">
@@ -73,27 +68,23 @@ export function BotScreenPage() {
                   <span>{meeting.data.workspaceName}</span>
                   <strong>{verified} / {guests.length} verified</strong>
                 </div>
-                <div className="bot-cols" aria-hidden><span>Guest</span><span>Status</span></div>
-                <ul className="bot-list">
-                  {slots.map((p, i) =>
-                    p === 'more' ? (
-                      <li key="more"><BoardRow size="xl" name={`+ ${hidden.length} MORE`} status="" tone="dim" /></li>
-                    ) : p ? (
+                {people.length === 0 ? (
+                  <p className="bot-empty">Waiting for guests to join the call</p>
+                ) : (
+                  <ul className="bot-list">
+                    {shown.map((p) => (
                       <li key={p.id}>
                         <BoardRow
                           size="xl"
                           name={p.displayName}
                           status={p.kind === 'member' ? 'MEMBER' : boardWord[p.status]}
                           tone={p.kind === 'member' ? 'paint' : boardTone[p.status]}
-                          lamp={p.kind === 'member' ? 'ok' : boardTone[p.status]}
                         />
                       </li>
-                    ) : (
-                      // Empty slots stay on the board as blank cells, so the board is whole before anyone joins.
-                      <li key={`blank-${i}`} aria-hidden><BoardRow size="xl" name="" status="" /></li>
-                    ),
-                  )}
-                </ul>
+                    ))}
+                    {hidden.length > 0 && <li className="bot-more">+ {hidden.length} more</li>}
+                  </ul>
+                )}
               </section>
             </>
           )}
