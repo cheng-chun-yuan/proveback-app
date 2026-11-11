@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProveBack</title>
+<style>
+  body{font-family:system-ui,-apple-system,"PingFang TC",sans-serif;background:#f5f6f8;color:#16181d;margin:0;padding:24px 16px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:0 0 12px}
+  .mode{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12px;background:#fff3cd;color:#7a5b00}
+  .mode.live{background:#d9f5e3;color:#0b6b33}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  section{background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  label{display:block;font-size:13px;color:#4b5563;margin-top:10px}
+  input[type=text],input[type=number],select{width:100%;padding:9px;border:1px solid #cfd4dc;border-radius:8px;font-size:14px;box-sizing:border-box;margin-top:4px}
+  .checks label{display:inline-flex;gap:4px;align-items:center;margin-right:12px}
+  button{padding:10px 16px;border:0;border-radius:9px;background:#1f4fd8;color:#fff;font-size:14px;cursor:pointer;margin-top:14px}
+  .card{border:1px solid #e3e6ec;border-radius:10px;padding:12px;margin-top:10px;font-size:14px}
+  .card b{font-size:15px} .muted{color:#6b7280;font-size:13px}
+  .st{display:inline-block;border-radius:5px;padding:1px 7px;font-size:12px;background:#eceff4}
+  .st.bound{background:#d9f5e3;color:#0b6b33}.st.verified{background:#e0e9ff;color:#1f4fd8}
+  .st.failed,.st.rejected,.st.bot_error{background:#fde2e2;color:#a11}
+  .full{grid-column:1/-1} a{color:#1f4fd8;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ProveBack</h1>
+  <span id="mode" class="mode"></span>
+
+  <div class="grid">
+    <section>
+      <h2>1. 建立驗證政策</h2>
+      <form id="policyForm">
+        <label>政策名稱<input type="text" name="name" required placeholder="例:台灣會員限定"></label>
+        <label>徽章文字<input type="text" name="badgeLabel" placeholder="例:護照已驗證"></label>
+        <label>在會議中揭露</label>
+        <div class="checks" id="attrs"></div>
+        <label>限定國籍(ISO 三碼,逗號分隔;留空 = 不限)
+          <input type="text" name="allowedNationalities" placeholder="TWN, JPN"></label>
+        <label>驗證時限(秒)<input type="number" name="timeoutSec" value="180" min="30" max="3600"></label>
+        <label>Self flow ID(留空用預設)<input type="text" name="selfFlowId"></label>
+        <button>新增政策</button>
+      </form>
+      <div id="policies"></div>
+    </section>
+
+    <section>
+      <h2>2. 派 bot 進會議</h2>
+      <form id="meetingForm">
+        <label>會議連結<input type="text" name="meetingUrl" placeholder="https://meet.google.com/xxx-xxxx-xxx"></label>
+        <label>套用政策<select name="policyId" id="policySelect"></select></label>
+        <button>派 bot 加入</button>
+      </form>
+      <p class="muted" id="hint"></p>
+    </section>
+
+    <section class="full">
+      <h2>3. 會議與驗證狀態</h2>
+      <div id="meetings"><p class="muted">還沒有會議。</p></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+let attributes = {};
+
+async function refresh() {
+  const s = await (await fetch('api/state')).json();
+  attributes = s.attributes;
+  $('#mode').textContent = s.mock ? '示範模式:未接 Self,驗證頁使用模擬資料' : 'Self 已啟用';
+  $('#mode').className = 'mode' + (s.mock ? '' : ' live');
+
+  if (!$('#attrs').children.length) {
+    for (const [k, label] of Object.entries(s.attributes)) {
+      const l = el('label'); const c = el('input'); c.type = 'checkbox'; c.name = 'disclose'; c.value = k;
+      if (k === 'nationality') c.checked = true;
+      l.append(c, label); $('#attrs').append(l);
+    }
+  }
+
+  const sel = $('#policySelect'); const keep = sel.value; sel.replaceChildren();
+  $('#policies').replaceChildren();
+  for (const p of s.policies) {
+    const o = el('option', p.name); o.value = p.id; sel.append(o);
+    const c = el('div', null, 'card'); c.append(el('b', p.name));
+    const d = p.disclose.map((k) => s.attributes[k]).join('、') || '不揭露個資';
+    const n = p.allowedNationalities.length ? p.allowedNationalities.join(', ') : '不限';
+    c.append(el('div', `徽章:${p.badgeLabel}|揭露:${d}|限定國籍:${n}|時限 ${p.timeoutSec} 秒`, 'muted'));
+    $('#policies').append(c);
+  }
+  if (keep) sel.value = keep;
+
+  const box = $('#meetings');
+  if (s.meetings.length) box.replaceChildren();
+  for (const m of [...s.meetings].reverse()) {
+    const p = s.policies.find((x) => x.id === m.policyId);
+    const c = el('div', null, 'card');
+    c.append(el('b', m.meetingUrl || '(模擬會議室)'), ' ', el('span', m.status, 'st ' + m.status));
+    c.append(el('div', `政策:${p ? p.name : '?'}`, 'muted'));
+    if (m.error) c.append(el('div', '錯誤:' + m.error, 'muted'));
+    if (m.joinUrl) { const a = el('a', '開啟模擬會議室 → ' + m.joinUrl); a.href = m.joinUrl; a.target = '_blank'; c.append(a); }
+    for (const x of m.sessions) {
+      const row = el('div'); row.style.marginTop = '6px';
+      const extra = Object.entries(x.disclosed).map(([k, v]) => `${s.attributes[k]}:${v}`).join('|');
+      row.append(el('span', x.status, 'st ' + x.status), ' ', x.name, extra ? `|${extra}` : '', x.reason ? `(${x.reason})` : '');
+      c.append(row);
+    }
+    box.append(c);
+  }
+}
+
+$('#policyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = Object.fromEntries(f); body.disclose = f.getAll('disclose');
+  await fetch('api/policies', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  e.target.reset(); refresh();
+});
+
+$('#meetingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#hint').textContent = '派送中…';
+  const r = await fetch('api/meetings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(e.target))) });
+  const out = await r.json();
+  $('#hint').textContent = r.ok ? 'bot 已派出。' : '失敗:' + (out.error || '請確認 proveback-bot 有在跑');
+  refresh();
+});
+
+refresh(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>
