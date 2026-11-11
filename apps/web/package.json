@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "vite --mode mock",
     "build": "vite build",
-    "typecheck": "tsc -p tsconfig.json"
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:mock": "tsx scripts/mock-flow.ts"
   },
   "dependencies": {
     "@proveback/contract": "*",
@@ -24,5 +27,10 @@
     "msw": "^3.0.5",
     "typescript": "^5.9.3",
     "vite": "^8.3.8"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
