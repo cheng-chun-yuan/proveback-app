@@ -2,11 +2,15 @@
   "name": "proveback",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev:api": "npm run dev -w @proveback/api",
     "dev:web": "npm run dev -w @proveback/web",
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:vercel": "npm run build -w @proveback/web && npm run build:vercel -w @proveback/api"
   }
 }

@@ -1,6 +1,6 @@
 # @proveback/api
 
-ProveBack 的後端:Hono + Node 內建的 SQLite(`node:sqlite`),介面完全照 `packages/contract`。
+ProveBack 的後端:Hono + libSQL(`@libsql/client`;本機是 SQLite 檔案,正式環境是 Turso),介面完全照 `packages/contract`。
 
 ## 啟動
 
@@ -11,9 +11,45 @@ npm run dev:api        # http://localhost:8787/api/v1
 ```
 
 ```bash
-npm test -w @proveback/api        # 契約測試(假資料模式、記憶體資料庫)
+npm test -w @proveback/api        # 契約測試(假資料模式、暫存檔資料庫)
 npm run typecheck -w @proveback/api
 ```
+
+## Database
+
+libSQL through `@libsql/client`. All access is async; `db.tx(async (t) => …)` runs an interactive write transaction and every statement inside it must use the handle `t`.
+
+| Variable | Meaning |
+|---|---|
+| `DATABASE_URL` | `libsql://…` (Turso) or `file:…`. Fallback: `TURSO_DATABASE_URL`. Unset = local file at `DB_PATH`. |
+| `DATABASE_AUTH_TOKEN` | Token for a remote database. Fallback: `TURSO_AUTH_TOKEN`. |
+| `DB_PATH` | Local SQLite file, used only when no URL is set. Default `apps/api/data/proveback.sqlite`. |
+| `SSE_POLL_MS` | How often an open SSE stream re-reads its snapshot from the database (default `1500`, `0` = off). |
+| `SSE_MAX_MS` | Maximum lifetime of one SSE stream (default unlimited; `50000` on Vercel). The browser reconnects by itself. |
+
+The schema is created on the first query of each process (`CREATE TABLE IF NOT EXISTS`).
+
+## Deploying to Vercel
+
+The repo root has `vercel.json` and `api/index.js`. `npm run build:vercel` builds the web app into `apps/web/dist` and bundles `src/vercel.ts` into `apps/api/dist/vercel.js`; `/api/*` and `/webhooks/*` are rewritten to that one function (Node.js runtime), everything else falls back to the SPA.
+
+1. Create a Turso database and import the repo in Vercel with the repo root as the project root (Node.js 22 or newer).
+2. Set these environment variables:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` + `DATABASE_AUTH_TOKEN` | The Turso URL and token (or `TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN` from the Turso integration) |
+| `SESSION_SECRET` | A long random string. Must be set and must not change. |
+| `WEB_URL` | The deployment's public URL, e.g. `https://proveback.example.com` |
+| `PUBLIC_API_URL` | The same URL (webhooks are served from the same domain) |
+| Google / Recall / Self keys | Optional, as in `.env.example`; a service without keys stays in fake mode |
+
+What is different on Vercel (`process.env.VERCEL` is set):
+
+- Instances share nothing in memory. Each SSE stream polls the database every `SSE_POLL_MS` and sends a fresh `snapshot` when the state changed, so events from other instances arrive within about 1.5 s. Events from the same instance still arrive immediately and are followed by one redundant `snapshot`.
+- Streams end after 50 s (`SSE_MAX_MS`) and the browser's `EventSource` reconnects. The function's `maxDuration` is 60 s.
+- No timers run after a response. Session expiry is applied on read; in fake mode the bot is already `in_meeting` when `POST /meetings/:mtgId/bot` returns.
+- Without `DATABASE_URL` the API falls back to a SQLite file in `/tmp`, which is neither persistent nor shared. Use it only to check that a deployment boots.
 
 ## 假資料模式
 
@@ -64,5 +100,6 @@ Google、Recall、Self 三個外部服務各自獨立:沒填金鑰的那一個�
 | `src/app.ts` | 路由、授權、SSE、webhook |
 | `src/core.ts` | 登入、參與者、驗證 session、套用證明、綁定來賓 |
 | `src/providers.ts` | Google / Recall / Self 的呼叫(只有這裡知道外部 API 的樣子) |
-| `src/db.ts` | SQLite schema |
+| `src/db.ts` | libSQL client、schema、transaction |
+| `src/vercel.ts` | Vercel function entry (`hono/vercel`) |
 | `test/contract.test.ts` | 每個回應都用契約 schema 驗證 |

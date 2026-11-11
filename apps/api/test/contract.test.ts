@@ -193,7 +193,7 @@ describe('Verification flow', () => {
     const sessionText = await anon.raw('GET', url('publicSession', { sessionId: s.id })).then((r) => r.text());
     expect(sessionText).not.toMatch(/JPN|SATO|P-001/);
     // The database has no passport name, passport number or plaintext nullifier
-    const dump = JSON.stringify(['guests', 'participants', 'verify_sessions', 'bindings'].map((t) => ctx.db.all(`SELECT * FROM ${t}`)));
+    const dump = JSON.stringify(await Promise.all(['guests', 'participants', 'verify_sessions', 'bindings'].map((t) => ctx.db.all(`SELECT * FROM ${t}`))));
     expect(dump).not.toMatch(/SATO KEN|P-001/);
   });
 
@@ -204,7 +204,7 @@ describe('Verification flow', () => {
     expect((await verify(meeting.joinToken, ken.id)).status).toBe('verified');
     expect((await participant(host, meeting.id, ken.id)).verification.checks!.nationality).toEqual({ allowed: true, value: null });
     expect((await host.ok(list(Guest), 'GET', url('guests', { wsId }))).items[0]!.nationality).toBeNull();
-    expect(JSON.stringify(ctx.db.all('SELECT * FROM guests')) + JSON.stringify(ctx.db.all('SELECT * FROM participants'))).not.toContain('JPN');
+    expect(JSON.stringify(await ctx.db.all('SELECT * FROM guests')) + JSON.stringify(await ctx.db.all('SELECT * FROM participants'))).not.toContain('JPN');
   });
 
   it.each([
@@ -411,6 +411,49 @@ describe('SSE', () => {
 
     await new Client(ctx).fail(401, 'unauthenticated', 'GET', url('meetingEvents', { mtgId: meeting.id }));
   });
+
+  it('polling: a change written by another instance (no bus event) arrives as a fresh snapshot', async () => {
+    ctx = makeApp({ ssePollMs: 30 });
+    const { host, meeting, join } = await setup(ctx);
+    const ken = await join(meeting.id, 'Ken Sato');
+    const hostStream = await open(host, url('meetingEvents', { mtgId: meeting.id }));
+    const pubStream = await open(new Client(ctx), url('publicEvents', { joinToken: meeting.joinToken }));
+    expect(HostEvent.parse(await hostStream.next()).type).toBe('snapshot');
+    expect(PublicEvent.parse(await pubStream.next()).type).toBe('snapshot');
+
+    // Straight to the database: this is what a write on a different serverless instance looks like from here
+    await ctx.db.run("UPDATE participants SET v_status = 'pending' WHERE id = ?", ken.id);
+    const h = HostEvent.parse(await hostStream.next());
+    const p = PublicEvent.parse(await pubStream.next());
+    expect(h.type === 'snapshot' && h.data.participants.find((x) => x.id === ken.id)!.verification.status).toBe('pending');
+    expect(p.type === 'snapshot' && p.data.participants.find((x) => x.id === ken.id)!.status).toBe('pending');
+
+    // A change made here still arrives as its incremental event first
+    await host.raw('POST', url('devLeave', { mtgId: meeting.id, pid: ken.id }));
+    expect(HostEvent.parse(await hostStream.next())).toMatchObject({ type: 'participant.left', data: { participantId: ken.id } });
+    await hostStream.close();
+    await pubStream.close();
+  });
+
+  it('max lifetime: the stream ends cleanly after sseMaxMs', async () => {
+    ctx = makeApp({ sseMaxMs: 60 });
+    const { meeting } = await setup(ctx);
+    const stream = await open(new Client(ctx), url('publicEvents', { joinToken: meeting.joinToken }));
+    expect(PublicEvent.parse(await stream.next()).type).toBe('snapshot');
+    await expect(stream.next()).rejects.toThrow('stream closed');
+  });
+});
+
+describe('Serverless mode', () => {
+  it('inline timers: the fake bot has joined by the time the response is sent', async () => {
+    ctx = makeApp({ inlineTimers: true, fakeBotDelayMs: 60_000 });
+    const host = await new Client(ctx).login('alice@acme.com');
+    const wsId = (await host.ok(MeResponse, 'GET', url('me'))).workspaces[0]!.id;
+    const policyId = (await host.ok(list(Policy), 'GET', url('policies', { wsId }))).items[0]!.id;
+    const m = await host.ok(Meeting, 'POST', url('meetings', { wsId }), { title: 't', meetUrl: 'https://meet.google.com/abc-defg-hij', policyId });
+    expect(await host.ok(Meeting, 'POST', url('meetingBot', { mtgId: m.id }))).toMatchObject({ status: 'live', botStatus: 'in_meeting' });
+    expect((await host.ok(MeetingDetail, 'GET', url('meeting', { mtgId: m.id }))).participants.map((p) => p.kind)).toEqual(['bot']);
+  });
 });
 
 describe('Fake mode switches', () => {
@@ -452,7 +495,7 @@ describe('Fake mode switches', () => {
     const policyId = (await host.ok(list(Policy), 'GET', url('policies', { wsId }))).items[0]!.id;
     const m = await host.ok(Meeting, 'POST', url('meetings', { wsId }), { title: 't', meetUrl: 'https://meet.google.com/abc-defg-hij', policyId });
     // Do not actually call Recall: set the status to joining directly, simulating after Create Bot succeeds
-    ctx.db.run("UPDATE meetings SET bot_status = 'joining', recall_bot_id = 'bot_1' WHERE id = ?", m.id);
+    await ctx.db.run("UPDATE meetings SET bot_status = 'joining', recall_bot_id = 'bot_1' WHERE id = ?", m.id);
     const hook = (event: string, participant: object) =>
       ctx.app.request('/webhooks/recall?token=tok', {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -500,7 +543,7 @@ describe('Self open SDK mode', () => {
     expect(selfApp.scope).toBe('proveback');
     expect(selfApp.disclosures).toMatchObject({ name: true, nationality: true, ofac: true, minimumAge: 18 });
     // The session can be found again from the user id the Self app will send back
-    const found = ctx.core.selfOpenSession(selfApp.userId);
+    const found = await ctx.core.selfOpenSession(selfApp.userId);
     expect(found?.sessionId).toBe(s.id);
     expect(found?.requirements).toEqual({ name: true, nationality: true, ofac: true, minimumAge: 18 });
   });

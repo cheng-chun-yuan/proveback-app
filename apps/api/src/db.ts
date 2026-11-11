@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import type { Client, InValue, ResultSet } from '@libsql/client';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -57,39 +57,117 @@ CREATE INDEX IF NOT EXISTS idx_sessions_participant ON verify_sessions (particip
 
 export type Row = Record<string, any>;
 
-export class Db {
-  readonly raw: DatabaseSync;
-  constructor(file: string) {
-    if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
-    this.raw = new DatabaseSync(file);
-    this.raw.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
-    this.raw.exec(SCHEMA);
+/** What both the database and a transaction handle can do */
+export interface Queryable {
+  get(sql: string, ...args: any[]): Promise<Row | undefined>;
+  all(sql: string, ...args: any[]): Promise<Row[]>;
+  run(sql: string, ...args: any[]): Promise<{ changes: number }>;
+}
+
+type Exec = (stmt: { sql: string; args: InValue[] }) => Promise<ResultSet>;
+
+const toRows = (rs: ResultSet): Row[] =>
+  rs.rows.map((r) => {
+    const o: Row = {};
+    rs.columns.forEach((c, i) => (o[c] = r[i]));
+    return o;
+  });
+const stmt = (sql: string, args: any[]) => ({ sql, args: args.map((a) => (a === undefined ? null : a)) as InValue[] });
+
+const queryable = (exec: Exec): Queryable => ({
+  get: async (sql, ...args) => toRows(await exec(stmt(sql, args)))[0],
+  all: async (sql, ...args) => toRows(await exec(stmt(sql, args))),
+  run: async (sql, ...args) => ({ changes: (await exec(stmt(sql, args))).rowsAffected }),
+});
+
+/**
+ * libSQL / Turso client. `url` is `file:<path>` for a local SQLite file, or a remote `libsql://` / `https://` URL.
+ * The schema is created once per process: every query awaits the memoized `ready()`.
+ */
+export class Db implements Queryable {
+  private opening: Promise<Client> | null = null;
+  private client: Client | null = null;
+  private closed = false;
+  private readonly local: boolean;
+  /** Local files only: writes and transactions run one at a time, because a libsql transaction holds its own connection */
+  private lock: Promise<unknown> = Promise.resolve();
+  private readonly q: Queryable;
+
+  constructor(private readonly url: string, private readonly authToken?: string) {
+    this.local = url.startsWith('file:');
+    this.q = queryable(async (s) => (await this.ready()).execute(s));
   }
-  get(sql: string, ...args: any[]): Row | undefined {
-    return this.raw.prepare(sql).get(...args) as Row | undefined;
+
+  ready(): Promise<Client> {
+    return (this.opening ??= this.open().catch((e) => {
+      this.opening = null; // let the next request retry
+      throw e;
+    }));
   }
-  all(sql: string, ...args: any[]): Row[] {
-    return this.raw.prepare(sql).all(...args) as Row[];
+
+  private async open(): Promise<Client> {
+    let client: Client;
+    if (this.local) {
+      fs.mkdirSync(path.dirname(this.url.slice('file:'.length)), { recursive: true });
+      const { createClient } = await import('@libsql/client');
+      client = createClient({ url: this.url });
+      await client.execute('PRAGMA journal_mode = WAL');
+    } else {
+      // The HTTP client has no native dependency, which is what a serverless function wants
+      const { createClient } = await import('@libsql/client/web');
+      client = createClient({ url: this.url, authToken: this.authToken });
+    }
+    await client.executeMultiple(SCHEMA);
+    this.client = client;
+    if (this.closed) client.close();
+    return client;
+  }
+
+  private serial<T>(fn: () => Promise<T>): Promise<T> {
+    if (!this.local) return fn();
+    const p = this.lock.then(fn, fn);
+    this.lock = p.catch(() => {});
+    return p;
+  }
+
+  get(sql: string, ...args: any[]) {
+    return this.q.get(sql, ...args);
+  }
+  all(sql: string, ...args: any[]) {
+    return this.q.all(sql, ...args);
   }
   run(sql: string, ...args: any[]) {
-    return this.raw.prepare(sql).run(...args);
+    return this.serial(() => this.q.run(sql, ...args));
   }
-  /** Synchronous transaction: rolls back if fn throws */
-  tx<T>(fn: () => T): T {
-    this.raw.exec('BEGIN IMMEDIATE');
-    try {
-      const out = fn();
-      this.raw.exec('COMMIT');
-      return out;
-    } catch (e) {
-      this.raw.exec('ROLLBACK');
-      throw e;
-    }
+
+  /**
+   * Interactive write transaction: commits when fn resolves, rolls back when it throws.
+   * Every statement inside fn must go through the handle `t`, never through the Db itself.
+   */
+  tx<T>(fn: (t: Queryable) => Promise<T>): Promise<T> {
+    return this.serial(async () => {
+      const tx = await (await this.ready()).transaction('write');
+      try {
+        const out = await fn(queryable((s) => tx.execute(s)));
+        await tx.commit();
+        return out;
+      } catch (e) {
+        await tx.rollback().catch(() => {});
+        throw e;
+      } finally {
+        tx.close();
+      }
+    });
   }
+
   close() {
-    if (this.raw.isOpen) this.raw.close();
+    this.closed = true;
+    this.client?.close();
   }
 }
 
-export const isUniqueViolation = (e: unknown) =>
-  e instanceof Error && /UNIQUE constraint failed/.test(e.message);
+export const isUniqueViolation = (e: unknown): boolean => {
+  if (!(e instanceof Error)) return false;
+  const code = String((e as { code?: unknown }).code ?? '');
+  return /UNIQUE constraint failed/i.test(e.message) || code === 'SQLITE_CONSTRAINT_UNIQUE' || code === 'SQLITE_CONSTRAINT_PRIMARYKEY' || isUniqueViolation(e.cause);
+};

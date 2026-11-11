@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { expect } from 'vitest';
 import type { z } from 'zod';
 import { ErrorBody, Meeting, Participant, Policy, VerifySession, url, type CreatePolicyBody, type DevCompleteSessionBody } from '@proveback/contract';
@@ -6,7 +9,17 @@ import { loadConfig, type Config } from '../src/config';
 
 export function makeApp(overrides: Partial<Config> = {}) {
   // Empty env -> all three external services are in fake mode
-  return createApp({ ...loadConfig({}), dbPath: ':memory:', sessionSecret: 'test-secret', fakeBotDelayMs: 5, ...overrides });
+  // A fresh temp-file database per app: libsql opens a new connection after each transaction, so ':memory:' would lose its data.
+  // SSE polling is off by default so the stream tests see exactly the bus events.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'proveback-test-'));
+  const ctx = createApp({ ...loadConfig({}), dbPath: path.join(dir, 'test.sqlite'), sessionSecret: 'test-secret', fakeBotDelayMs: 5, ssePollMs: 0, ...overrides });
+  return {
+    ...ctx,
+    close: () => {
+      ctx.close();
+      fs.rmSync(dir, { recursive: true, force: true });
+    },
+  };
 }
 export type Ctx = ReturnType<typeof makeApp>;
 

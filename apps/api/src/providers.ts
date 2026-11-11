@@ -178,13 +178,13 @@ export interface SelfOpenProofBody {
 }
 
 /** Verify a proof posted by the Self app. `lookup` returns what the session behind a user id was asked to prove. */
-export async function selfOpenVerify(cfg: Config, body: SelfOpenProofBody, lookup: (userId: string) => SelfOpenRequirements | null) {
+export async function selfOpenVerify(cfg: Config, body: SelfOpenProofBody, lookup: (userId: string) => Promise<SelfOpenRequirements | null>) {
   const { SelfBackendVerifier, AllIds } = selfCore();
   type V = InstanceType<SelfCore['SelfBackendVerifier']>;
   const store = {
     getActionId: async (userIdentifier: string) => normalizeSelfUserId(userIdentifier),
     getConfig: async (id: string) => {
-      const r = lookup(id);
+      const r = await lookup(id);
       return r ? verificationConfig(r) : {};
     },
     setConfig: async () => false,

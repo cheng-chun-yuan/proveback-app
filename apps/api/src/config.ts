@@ -7,7 +7,17 @@ export interface Config {
   port: number;
   webUrl: string;
   publicApiUrl: string;
+  /** Local SQLite file, used when databaseUrl is null */
   dbPath: string;
+  /** libSQL / Turso URL (libsql://…, https://… or file:…). null = the local file at dbPath */
+  databaseUrl: string | null;
+  databaseAuthToken: string | null;
+  /** SSE: how often each open stream re-reads its snapshot from the database (0 = off). This is what carries changes made by other instances. */
+  ssePollMs: number;
+  /** SSE: end the stream after this long so the browser's EventSource reconnects (0 = unlimited) */
+  sseMaxMs: number;
+  /** Serverless: nothing can run after the response, so delayed work is done inline instead of on a timer */
+  inlineTimers: boolean;
   sessionSecret: string;
   botName: string;
   fakeBotDelayMs: number;
@@ -22,11 +32,19 @@ export interface Config {
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
   const port = Number(env.PORT || 8787);
   const webUrl = trim(env.WEB_URL || 'http://localhost:5173');
+  const vercel = !!env.VERCEL;
+  const databaseUrl = env.DATABASE_URL || env.TURSO_DATABASE_URL || null;
   return {
     port,
     webUrl,
     publicApiUrl: trim(env.PUBLIC_API_URL || `http://localhost:${port}`),
-    dbPath: env.DB_PATH || fileURLToPath(new URL('../data/proveback.sqlite', import.meta.url)),
+    // A Vercel function can only write to /tmp, and that does not persist: set DATABASE_URL there
+    dbPath: env.DB_PATH || (vercel ? '/tmp/proveback.sqlite' : fileURLToPath(new URL('../data/proveback.sqlite', import.meta.url))),
+    databaseUrl,
+    databaseAuthToken: env.DATABASE_AUTH_TOKEN || env.TURSO_AUTH_TOKEN || null,
+    ssePollMs: Number(env.SSE_POLL_MS ?? 1500),
+    sseMaxMs: Number(env.SSE_MAX_MS ?? (vercel ? 50_000 : 0)),
+    inlineTimers: vercel,
     // When unset, a new secret is generated on every start: sign-in state and nullifier hashes do not survive a restart, so this is only suitable for local trials
     sessionSecret: env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
     botName: env.BOT_NAME || 'ProveBack',

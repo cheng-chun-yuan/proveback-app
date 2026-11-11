@@ -7,10 +7,12 @@
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "build:vercel": "esbuild src/vercel.ts --bundle --format=esm --platform=node --target=node22 --outfile=dist/vercel.js --external:@libsql/client --external:@selfxyz/*"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.7",
+    "@libsql/client": "^0.18.0",
     "@proveback/contract": "*",
     "@selfxyz/common": "^0.0.10",
     "@selfxyz/core": "^1.2.0-beta.3",
@@ -20,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
