@@ -28,7 +28,7 @@
 <body>
 <div class="wrap">
   <h1>ProveBack</h1>
-  <span id="mode" class="mode"></span>
+  <span id="modeGoogle" class="mode"></span> <span id="modeSelf" class="mode"></span>
 
   <div class="grid">
     <section>
@@ -36,10 +36,14 @@
       <form id="policyForm">
         <label>政策名稱<input type="text" name="name" required placeholder="例:台灣會員限定"></label>
         <label>徽章文字<input type="text" name="badgeLabel" placeholder="例:護照已驗證"></label>
+        <label>驗證方式</label>
+        <div class="checks" id="methods"></div>
         <label>在會議中揭露</label>
         <div class="checks" id="attrs"></div>
         <label>限定國籍(ISO 三碼,逗號分隔;留空 = 不限)
           <input type="text" name="allowedNationalities" placeholder="TWN, JPN"></label>
+        <label>限定組織網域(逗號分隔;留空 = 不限)
+          <input type="text" name="allowedDomains" placeholder="acme.com, example.org"></label>
         <label>驗證時限(秒)<input type="number" name="timeoutSec" value="180" min="30" max="3600"></label>
         <label>Self flow ID(留空用預設)<input type="text" name="selfFlowId"></label>
         <button>新增政策</button>
@@ -72,13 +76,22 @@ let attributes = {};
 async function refresh() {
   const s = await (await fetch('api/state')).json();
   attributes = s.attributes;
-  $('#mode').textContent = s.mock ? '示範模式:未接 Self,驗證頁使用模擬資料' : 'Self 已啟用';
-  $('#mode').className = 'mode' + (s.mock ? '' : ' live');
+  $('#modeGoogle').textContent = s.mockGoogle ? 'Google:示範模式' : 'Google OAuth 已啟用';
+  $('#modeGoogle').className = 'mode' + (s.mockGoogle ? '' : ' live');
+  $('#modeSelf').textContent = s.mockSelf ? 'Self:示範模式' : 'Self 已啟用';
+  $('#modeSelf').className = 'mode' + (s.mockSelf ? '' : ' live');
+
+  if (!$('#methods').children.length) {
+    for (const [k, label] of Object.entries(s.methods)) {
+      const l = el('label'); const c = el('input'); c.type = 'checkbox'; c.name = 'methods'; c.value = k; c.checked = true;
+      l.append(c, label); $('#methods').append(l);
+    }
+  }
 
   if (!$('#attrs').children.length) {
     for (const [k, label] of Object.entries(s.attributes)) {
       const l = el('label'); const c = el('input'); c.type = 'checkbox'; c.name = 'disclose'; c.value = k;
-      if (k === 'nationality') c.checked = true;
+      if (k === 'nationality' || k === 'org') c.checked = true;
       l.append(c, label); $('#attrs').append(l);
     }
   }
@@ -90,7 +103,9 @@ async function refresh() {
     const c = el('div', null, 'card'); c.append(el('b', p.name));
     const d = p.disclose.map((k) => s.attributes[k]).join('、') || '不揭露個資';
     const n = p.allowedNationalities.length ? p.allowedNationalities.join(', ') : '不限';
-    c.append(el('div', `徽章:${p.badgeLabel}|揭露:${d}|限定國籍:${n}|時限 ${p.timeoutSec} 秒`, 'muted'));
+    const m = p.methods.map((k) => s.methods[k]).join(' + ');
+    const o = p.allowedDomains.length ? p.allowedDomains.join(', ') : '不限';
+    c.append(el('div', `方式:${m}|徽章:${p.badgeLabel}|揭露:${d}|限定國籍:${n}|限定組織:${o}|時限 ${p.timeoutSec} 秒`, 'muted'));
     $('#policies').append(c);
   }
   if (keep) sel.value = keep;
@@ -117,9 +132,9 @@ async function refresh() {
 $('#policyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
-  const body = Object.fromEntries(f); body.disclose = f.getAll('disclose');
+  const body = Object.fromEntries(f); body.disclose = f.getAll('disclose'); body.methods = f.getAll('methods');
   await fetch('api/policies', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-  e.target.reset(); refresh();
+  e.target.reset(); $('#methods').replaceChildren(); $('#attrs').replaceChildren(); refresh();
 });
 
 $('#meetingForm').addEventListener('submit', async (e) => {
