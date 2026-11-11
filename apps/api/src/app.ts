@@ -12,7 +12,7 @@ import { Bus } from './bus';
 import { type Config, loadConfig } from './config';
 import { createCore, type Proof } from './core';
 import { Db, type Row } from './db';
-import { googleAuthUrl, googleExchange, recallCreateBot, recallLeave, selfVerifyWebhook } from './providers';
+import { googleAuthUrl, googleExchange, normalizeSelfUserId, recallCreateBot, recallLeave, selfOpenVerify, selfVerifyWebhook } from './providers';
 import { ApiError, newId, now } from './util';
 
 const COOKIE = 'pb_session';
@@ -23,7 +23,7 @@ export function createApp(cfg: Config = loadConfig()) {
   const core = createCore(cfg, db, bus);
   const app = new Hono();
   const P = (p: string) => API_BASE + p;
-  const fake = { google: !cfg.google, recall: !cfg.recall, self: !cfg.self };
+  const fake = { google: !cfg.google, recall: !cfg.recall, self: !cfg.self && !cfg.selfOpen };
 
   app.onError((err, c) => {
     if (err instanceof ApiError) return c.json({ error: { code: err.code, message: err.message } }, err.status as 400);
@@ -438,6 +438,45 @@ export function createApp(cfg: Config = loadConfig()) {
       if (next) core.setBotStatus(meeting.id, next);
     }
     return c.body(null, 200);
+  });
+
+  // Open SDK: the Self app posts the proof here. The reply format is the one the Self app expects.
+  app.post('/webhooks/self-proof', async (c) => {
+    if (!cfg.selfOpen) throw new ApiError('not_found', 'Not found');
+    const reply = (ok: boolean, reason?: string, status: 200 | 400 = 200) =>
+      c.json({ status: ok ? 'success' : 'error', result: ok, ...(reason ? { reason } : {}) }, status);
+    const b = await c.req.json().catch(() => null);
+    if (!b || !b.attestationId || !b.proof || !b.publicSignals || !b.userContextData) {
+      return reply(false, 'Missing attestationId, proof, publicSignals or userContextData', 400);
+    }
+    let result: Awaited<ReturnType<typeof selfOpenVerify>>;
+    try {
+      result = await selfOpenVerify(cfg, b, (id) => core.selfOpenSession(id)?.requirements ?? null);
+    } catch (e) {
+      console.error('[self-open] proof rejected:', (e as Error).message);
+      return reply(false, 'The proof could not be verified');
+    }
+    const found = core.selfOpenSession(normalizeSelfUserId(result.userData.userIdentifier));
+    if (!found) return reply(false, 'This verification link is no longer valid. Scan the code in the meeting again.');
+    const d = result.discloseOutput;
+    const req = found.requirements;
+    const proof: Proof = {
+      valid: result.isValidDetails.isValid,
+      invalidReason: 'proof_invalid',
+      nullifier: d.nullifier ? String(d.nullifier) : null,
+      name: d.name ? String(d.name) : null,
+      nationality: d.nationality ? String(d.nationality).toUpperCase() : null,
+      ofacClear: req.ofac ? result.isValidDetails.isOfacValid : false,
+      age: { kind: 'attested', min: req.minimumAge !== null && result.isValidDetails.isMinimumAgeValid ? req.minimumAge : null },
+    };
+    try {
+      core.applyProof(found.sessionId, proof);
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e;
+      return reply(false, e.message);
+    }
+    // A valid proof is acknowledged as received; whether it satisfied the meeting's policy shows on the board and the guest page
+    return reply(true);
   });
 
   app.post('/webhooks/self', async (c) => {

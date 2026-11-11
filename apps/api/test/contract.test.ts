@@ -475,3 +475,54 @@ describe('Fake mode switches', () => {
 // Type-level check: the result of list() can be used as the contract List<T>
 const _check: z.infer<ReturnType<typeof list<typeof Guest>>> = { items: [] };
 void _check;
+
+describe('Self open SDK mode', () => {
+  const open = () => makeApp({ selfOpen: { scope: 'proveback', mock: true }, publicApiUrl: 'https://tunnel.example.test' });
+
+  it('counts as real Self: the simulated-proof endpoint disappears', async () => {
+    ctx = open();
+    const c = new Client(ctx);
+    expect(await c.ok(DevStatus, 'GET', url('devStatus'))).toEqual({ fake: { google: true, recall: true, self: false } });
+    await c.fail(404, 'not_found', 'POST', url('devCompleteSession', { sessionId: 'vs_x' }), passport());
+  });
+
+  it('a session carries a Self link built from the policy, pointing at this API', async () => {
+    ctx = open();
+    const { meeting, join } = await setup(ctx, { minimumAge: 18 });
+    const guest = await join(meeting.id, 'Ken Sato');
+    const s = await new Client(ctx).ok(VerifySession, 'POST', url('publicSessions', { joinToken: meeting.joinToken }), { participantId: guest.id });
+    expect(s.selfApp).toBeNull();
+    const link = new URL(s.universalLink);
+    expect(link.hostname).toBe('redirect.self.xyz');
+    const selfApp = JSON.parse(link.searchParams.get('selfApp')!);
+    expect(selfApp.endpoint).toBe('https://tunnel.example.test/webhooks/self-proof');
+    expect(selfApp.endpointType).toBe('staging_https');
+    expect(selfApp.scope).toBe('proveback');
+    expect(selfApp.disclosures).toMatchObject({ name: true, nationality: true, ofac: true, minimumAge: 18 });
+    // The session can be found again from the user id the Self app will send back
+    const found = ctx.core.selfOpenSession(selfApp.userId);
+    expect(found?.sessionId).toBe(s.id);
+    expect(found?.requirements).toEqual({ name: true, nationality: true, ofac: true, minimumAge: 18 });
+  });
+
+  it('asks for nothing the policy does not need', async () => {
+    ctx = open();
+    const { meeting, join } = await setup(ctx, { requireOfacClear: false, excludedCountries: [], discloseNationality: false, nameMatch: 'off' });
+    const guest = await join(meeting.id, 'Ken Sato');
+    const s = await new Client(ctx).ok(VerifySession, 'POST', url('publicSessions', { joinToken: meeting.joinToken }), { participantId: guest.id });
+    const selfApp = JSON.parse(new URL(s.universalLink).searchParams.get('selfApp')!);
+    expect(selfApp.disclosures.name ?? false).toBe(false);
+    expect(selfApp.disclosures.nationality ?? false).toBe(false);
+    expect(selfApp.disclosures.ofac ?? false).toBe(false);
+  });
+
+  it('rejects a proof post with missing fields, and is absent when the mode is off', async () => {
+    ctx = open();
+    const res = await new Client(ctx).raw('POST', '/webhooks/self-proof', { proof: {} });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ status: 'error', result: false });
+    ctx.close();
+    ctx = makeApp();
+    expect((await new Client(ctx).raw('POST', '/webhooks/self-proof', {})).status).toBe(404);
+  });
+});

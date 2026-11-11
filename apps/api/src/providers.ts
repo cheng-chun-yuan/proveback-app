@@ -1,4 +1,5 @@
 // Thin wrappers around external services. Only this file knows the shape of the Google / Recall.ai / Self APIs.
+import { createRequire } from 'node:module';
 import { webRoutes } from '@proveback/contract';
 import type { Config } from './config';
 import { ApiError } from './util';
@@ -117,4 +118,82 @@ export async function selfCreateSession(cfg: Config, s: { sessionId: string; joi
 export async function selfVerifyWebhook(cfg: Config, raw: string, headers: Record<string, string>) {
   const { SelfWebhooks } = await selfSdk();
   return SelfWebhooks.verify(raw, headers, cfg.self!.webhookSecret);
+}
+
+// ---------- Self, open-source SDK (legacy; needs no API key) ----------
+// The Self app posts the proof straight to this API and it is verified here, off-chain.
+// The verifier reads Self's registry roots from Celo over public RPC, so the server needs outbound network access.
+// Self marks this SDK as legacy in favour of the hosted one above; it is kept because it works without an account.
+
+/** What a session asks the passport holder to prove. The QR link and the verifier must agree on this. */
+export interface SelfOpenRequirements {
+  name: boolean;
+  nationality: boolean;
+  ofac: boolean;
+  minimumAge: number | null;
+}
+
+// @selfxyz/common cannot be loaded as ESM on current Node (a JSON import without an attribute), so load both as CommonJS
+const cjs = createRequire(import.meta.url);
+type SelfCore = typeof import('@selfxyz/core');
+const selfCore = (): SelfCore => cjs('@selfxyz/core');
+
+export const selfOpenEndpoint = (cfg: Config) => `${cfg.publicApiUrl}/webhooks/self-proof`;
+
+/** Self hands the user id back as hex or as a decimal string; reduce every form to 32 lowercase hex characters */
+export function normalizeSelfUserId(id: string): string {
+  let u = String(id || '').toLowerCase().replace(/^0x/, '').replace(/-/g, '');
+  if (/^\d+$/.test(u) && u.length > 32) u = BigInt(u).toString(16);
+  return u.padStart(32, '0').slice(-32);
+}
+
+const verificationConfig = (r: SelfOpenRequirements) => ({
+  ...(r.ofac ? { ofac: true } : {}),
+  ...(r.minimumAge !== null ? { minimumAge: r.minimumAge } : {}),
+});
+
+export function selfOpenLink(cfg: Config, userId: string, r: SelfOpenRequirements): string {
+  try {
+    const { SelfAppBuilder } = cjs('@selfxyz/common') as { SelfAppBuilder: new (o: Record<string, unknown>) => { build(): unknown } };
+    const app = new SelfAppBuilder({
+      appName: 'ProveBack',
+      scope: cfg.selfOpen!.scope,
+      endpoint: selfOpenEndpoint(cfg),
+      endpointType: cfg.selfOpen!.mock ? 'staging_https' : 'https',
+      userId,
+      userIdType: 'uuid',
+      disclosures: { ...(r.name ? { name: true } : {}), ...(r.nationality ? { nationality: true } : {}), ...verificationConfig(r) },
+    }).build();
+    return selfCore().getUniversalLink(app as Parameters<SelfCore['getUniversalLink']>[0]);
+  } catch (e) {
+    throw new ApiError('upstream_error', `Could not build the Self link: ${(e as Error).message}`);
+  }
+}
+
+export interface SelfOpenProofBody {
+  attestationId: unknown;
+  proof: unknown;
+  publicSignals: unknown;
+  userContextData: unknown;
+}
+
+/** Verify a proof posted by the Self app. `lookup` returns what the session behind a user id was asked to prove. */
+export async function selfOpenVerify(cfg: Config, body: SelfOpenProofBody, lookup: (userId: string) => SelfOpenRequirements | null) {
+  const { SelfBackendVerifier, AllIds } = selfCore();
+  type V = InstanceType<SelfCore['SelfBackendVerifier']>;
+  const store = {
+    getActionId: async (userIdentifier: string) => normalizeSelfUserId(userIdentifier),
+    getConfig: async (id: string) => {
+      const r = lookup(id);
+      return r ? verificationConfig(r) : {};
+    },
+    setConfig: async () => false,
+  };
+  const verifier = new SelfBackendVerifier(cfg.selfOpen!.scope, selfOpenEndpoint(cfg), cfg.selfOpen!.mock, AllIds, store, 'uuid');
+  return verifier.verify(
+    body.attestationId as Parameters<V['verify']>[0],
+    body.proof as Parameters<V['verify']>[1],
+    body.publicSignals as Parameters<V['verify']>[2],
+    String(body.userContextData),
+  );
 }

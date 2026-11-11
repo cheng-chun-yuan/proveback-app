@@ -15,6 +15,8 @@ export interface Config {
   google: { clientId: string; clientSecret: string; redirectUri: string } | null;
   recall: { apiKey: string; region: string; webhookToken: string } | null;
   self: { apiKey: string; webhookSecret: string; flowId: string } | null;
+  /** Self's open-source SDK (legacy): no API key. The Self app posts the proof to this API and it is verified here. */
+  selfOpen: { scope: string; mock: boolean } | null;
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -45,5 +47,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     self: env.SELF_API_KEY
       ? { apiKey: env.SELF_API_KEY, webhookSecret: env.SELF_WEBHOOK_SECRET || '', flowId: env.SELF_FLOW_ID || '' }
       : null,
+    // SELF_API_KEY wins when both are set
+    selfOpen: !env.SELF_API_KEY && env.SELF_MODE === 'open' ? { scope: env.SELF_SCOPE || 'proveback', mock: env.SELF_MOCK !== 'false' } : null,
   };
 }

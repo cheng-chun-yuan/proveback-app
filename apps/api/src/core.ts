@@ -8,7 +8,7 @@ import { webRoutes } from '@proveback/contract';
 import type { Bus } from './bus';
 import type { Config } from './config';
 import { type Db, type Row, isUniqueViolation } from './db';
-import { selfCreateSession } from './providers';
+import { normalizeSelfUserId, selfCreateSession, selfOpenLink, type SelfOpenRequirements } from './providers';
 import { ApiError, NAME_MATCH_THRESHOLD, nameScore, newId, now, sha256 } from './util';
 
 /** The content of a proof, shared by real Self and fake mode */
@@ -259,6 +259,22 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     for (const s of db.all("SELECT id FROM verify_sessions WHERE meeting_id = ? AND status = 'pending' AND expires_at <= ?", meetingId, now())) expireIfDue(s.id);
   }
 
+  /** What a policy needs disclosed. Nationality is requested only when the policy shows it or has to check it against a list. */
+  const requirementsOf = (pol: Row): SelfOpenRequirements => ({
+    name: pol.name_match !== 'off',
+    nationality: !!pol.disclose_nationality || JSON.parse(pol.excluded_countries).length > 0,
+    ofac: !!pol.require_ofac_clear,
+    minimumAge: pol.minimum_age ?? null,
+  });
+
+  /** Open SDK: find the pending session behind a Self user id, with what it was asked to prove */
+  function selfOpenSession(selfUserId: string): { sessionId: string; requirements: SelfOpenRequirements } | null {
+    const s = db.get('SELECT id, meeting_id FROM verify_sessions WHERE self_session_id = ?', normalizeSelfUserId(selfUserId));
+    const m = s && meetingRow(s.meeting_id);
+    const pol = m && policyRow(m.policy_id);
+    return pol ? { sessionId: s!.id, requirements: requirementsOf(pol) } : null;
+  }
+
   async function createSession(m: Row, participantId: string): Promise<VerifySession> {
     const p = participantRow(participantId);
     if (!p || p.meeting_id !== m.id) throw new ApiError('not_found', 'Participant not found in this meeting');
@@ -274,6 +290,11 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       const created = await selfCreateSession(cfg, { sessionId: id, joinToken: m.join_token });
       universalLink = created.verificationUrl;
       selfSessionId = created.selfSessionId;
+    } else if (cfg.selfOpen) {
+      // Open SDK: the Self user id is a fresh UUID; the proof comes back carrying it
+      const userId = crypto.randomUUID();
+      universalLink = selfOpenLink(cfg, userId, requirementsOf(policyRow(m.policy_id)!));
+      selfSessionId = normalizeSelfUserId(userId);
     }
     db.tx(() => {
       // A participant has only one active session at a time
@@ -401,7 +422,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     meetingDetail, publicMeeting,
     createWorkspace, login, userByToken, logout, workspacesOf,
     participantJoined, participantLeft, participantLeftByExternalId, setBotStatus, resetParticipant,
-    createSession, getSession, applyProof, guests, revokeGuest, later,
+    createSession, getSession, applyProof, selfOpenSession, guests, revokeGuest, later,
     stop: () => {
       for (const t of timers) clearTimeout(t);
       timers.clear();

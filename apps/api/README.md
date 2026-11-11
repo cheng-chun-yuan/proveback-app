@@ -35,6 +35,8 @@ Google、Recall、Self 三個外部服務各自獨立:沒填金鑰的那一個�
 
 **Self**:在 Self Enterprise dashboard 建一個 flow,打開 Nationality 與 Full name 的揭露以及 OFAC;把測試金鑰、flow ID 填進 `.env`;webhook 網址填 `<PUBLIC_API_URL>/webhooks/self`,把 `whsec_…` 填進 `SELF_WEBHOOK_SECRET`。證明只在後端驗簽(off-chain),不使用鏈上驗證。
 
+**Self(開源 SDK,不需要金鑰)**:`SELF_API_KEY` 留空,設 `SELF_MODE=open`,並把 `PUBLIC_API_URL` 設成公開 HTTPS 網址。來賓頁的連結會直接開啟 Self app,app 把證明送到 `<PUBLIC_API_URL>/webhooks/self-proof`,後端在這裡驗證(off-chain)。每場會議要求揭露的項目依政策決定:要比對姓名才要姓名、要顯示國籍或有排除名單才要國籍、OFAC 與最低年齡照政策設定。`SELF_MOCK=true`(預設)接受 Self app 產生的 mock 護照。注意:Self 已把這套 SDK 標為舊版;驗證時會透過公開 RPC 讀取 Celo 上的登錄資料,伺服器需要能連外。這條路徑還沒有用真實的 Self app 測過。
+
 ## 驗證邏輯
 
 一份證明依序檢查:`proof_invalid` → `ofac` → `excluded_country` → `underage` → `name_mismatch` → 綁定來賓(`already_bound`)。
