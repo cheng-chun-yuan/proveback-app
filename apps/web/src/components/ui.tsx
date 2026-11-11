@@ -43,7 +43,7 @@ export function Qr({ text, size, className }: { text: string; size: number; clas
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let stale = false;
-    QRCode.toDataURL(text, { width: size * 2, margin: 1, errorCorrectionLevel: 'M', color: { dark: '#131417', light: '#ffffff' } }).then(
+    QRCode.toDataURL(text, { width: size * 2, margin: 3, errorCorrectionLevel: text.length > 300 ? 'L' : 'M', color: { dark: '#131417', light: '#ffffff' } }).then(
       (u) => !stale && setSrc(u),
       () => !stale && setSrc(null),
     );
