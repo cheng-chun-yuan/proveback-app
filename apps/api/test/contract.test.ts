@@ -535,7 +535,9 @@ describe('Self open SDK mode', () => {
     const guest = await join(meeting.id, 'Ken Sato');
     const s = await new Client(ctx).ok(VerifySession, 'POST', url('publicSessions', { joinToken: meeting.joinToken }), { participantId: guest.id });
     expect(s.selfApp).toBeNull();
-    const link = new URL(s.universalLink);
+    // The session hands out a short link on this API; the full Self link sits behind it
+    expect(s.universalLink).toBe(`https://tunnel.example.test/api/v1/public/sessions/${s.id}/self`);
+    const link = new URL((await ctx.core.selfLinkOf(s.id))!);
     expect(link.hostname).toBe('redirect.self.xyz');
     const selfApp = JSON.parse(link.searchParams.get('selfApp')!);
     expect(selfApp.endpoint).toBe('https://tunnel.example.test/webhooks/self-proof');
@@ -553,7 +555,7 @@ describe('Self open SDK mode', () => {
     const { meeting, join } = await setup(ctx, { requireOfacClear: false, excludedCountries: [], discloseNationality: false, nameMatch: 'off' });
     const guest = await join(meeting.id, 'Ken Sato');
     const s = await new Client(ctx).ok(VerifySession, 'POST', url('publicSessions', { joinToken: meeting.joinToken }), { participantId: guest.id });
-    const selfApp = JSON.parse(new URL(s.universalLink).searchParams.get('selfApp')!);
+    const selfApp = JSON.parse(new URL((await ctx.core.selfLinkOf(s.id))!).searchParams.get('selfApp')!);
     expect(selfApp.disclosures.name ?? false).toBe(false);
     expect(selfApp.disclosures.nationality ?? false).toBe(false);
     expect(selfApp.disclosures.ofac ?? false).toBe(false);
