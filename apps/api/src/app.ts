@@ -512,7 +512,10 @@ export function createApp(cfg: Config = loadConfig()) {
       return reply(false, 'The proof could not be verified');
     }
     const found = await core.selfOpenSession(normalizeSelfUserId(result.userData.userIdentifier));
-    if (!found) return reply(false, 'This verification link is no longer valid. Scan the code in the meeting again.');
+    if (!found) {
+      console.warn('[self-open] proof for an unknown session');
+      return reply(false, 'This verification link is no longer valid. Scan the code in the meeting again.');
+    }
     const d = result.discloseOutput;
     const req = found.requirements;
     const proof: Proof = {
@@ -521,11 +524,13 @@ export function createApp(cfg: Config = loadConfig()) {
       nullifier: d.nullifier ? String(d.nullifier) : null,
       name: d.name ? String(d.name) : null,
       nationality: d.nationality ? String(d.nationality).toUpperCase() : null,
-      ofacClear: req.ofac ? result.isValidDetails.isOfacValid : false,
+      // Despite its name, the library sets isOfacValid to true when the person IS on a sanctions list
+      ofacClear: req.ofac ? !result.isValidDetails.isOfacValid : false,
       age: { kind: 'attested', min: req.minimumAge !== null && result.isValidDetails.isMinimumAgeValid ? req.minimumAge : null },
     };
     try {
-      await core.applyProof(found.sessionId, proof);
+      const applied = await core.applyProof(found.sessionId, proof);
+      console.log(`[self-open] session ${found.sessionId}: ${applied.status}${applied.failureReason ? ` (${applied.failureReason})` : ''}`);
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
       return reply(false, e.message);
