@@ -25,7 +25,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     webUrl,
     publicApiUrl: trim(env.PUBLIC_API_URL || `http://localhost:${port}`),
     dbPath: env.DB_PATH || fileURLToPath(new URL('../data/proveback.sqlite', import.meta.url)),
-    // 沒設定時每次啟動都換一把:登入狀態與 nullifier 雜湊都不會跨重啟,只適合本機試玩
+    // When unset, a new secret is generated on every start: sign-in state and nullifier hashes do not survive a restart, so this is only suitable for local trials
     sessionSecret: env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
     botName: env.BOT_NAME || 'ProveBack',
     fakeBotDelayMs: Number(env.FAKE_BOT_DELAY_MS ?? 1000),
@@ -35,7 +35,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
         ? {
             clientId: env.GOOGLE_CLIENT_ID,
             clientSecret: env.GOOGLE_CLIENT_SECRET,
-            // 預設走前端網域(由 dev server 代理到後端),cookie 才會設在前端的 origin 上
+            // Defaults to the frontend domain (proxied to the backend by the dev server) so the cookie is set on the frontend origin
             redirectUri: env.GOOGLE_REDIRECT_URI || `${webUrl}/api/v1/auth/google/callback`,
           }
         : null,

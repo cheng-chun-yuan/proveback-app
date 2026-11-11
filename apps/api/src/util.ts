@@ -23,10 +23,10 @@ export class ApiError extends Error {
   }
 }
 
-// ---------- 姓名比對 ----------
-// 護照 MRZ 的姓名是大寫、沒有變音符號、可能被截斷,順序也可能是「姓 名」。
-// 做法:正規化後切成 token,不看順序;token 完全相同或其中一個是另一個的前綴(≥3 字元)就算相同。
-// 分數是 Dice 係數(0–1),≥ 0.6 視為相符。
+// ---------- Name matching ----------
+// Passport MRZ names are uppercase, have no diacritics, may be truncated, and may be in "surname given name" order.
+// Approach: normalize and split into tokens, ignoring order; tokens match if they are identical or one is a prefix of the other (3+ characters).
+// The score is the Dice coefficient (0-1); 0.6 or higher counts as a match.
 export const NAME_MATCH_THRESHOLD = 0.6;
 
 export function nameTokens(name: string): string[] {

@@ -1,4 +1,4 @@
-// 領域邏輯:登入、參與者、驗證 session、套用證明、綁定來賓。路由層只做驗證與授權。
+// Domain logic: sign-in, participants, verification sessions, applying proofs, binding guests. The route layer only handles validation and authorization.
 import crypto from 'node:crypto';
 import type {
   Checks, FailureReason, Guest, HostEvent, Meeting, MeetingDetail, Member, Participant, Policy, PublicEvent,
@@ -11,20 +11,20 @@ import { type Db, type Row, isUniqueViolation } from './db';
 import { selfCreateSession } from './providers';
 import { ApiError, NAME_MATCH_THRESHOLD, nameScore, newId, now, sha256 } from './util';
 
-/** 一份證明的內容,真 Self 與假資料模式共用 */
+/** The content of a proof, shared by real Self and fake mode */
 export interface Proof {
   valid: boolean;
-  /** 非 valid 時的原因 */
+  /** reason when not valid */
   invalidReason?: 'expired' | 'proof_invalid';
   nullifier: string | null;
   name: string | null;
   nationality: string | null;
   ofacClear: boolean;
-  /** actual:知道實際年齡(假資料模式);attested:只知道證明保證的最低年齡(真 Self) */
+  /** actual: the real age is known (fake mode); attested: only the minimum age guaranteed by the proof is known (real Self) */
   age: { kind: 'actual'; value: number } | { kind: 'attested'; min: number | null };
 }
 
-// ---------- row → 契約物件 ----------
+// ---------- row -> contract object ----------
 const toUser = (r: Row): User => ({ id: r.id, email: r.email, name: r.name, avatarUrl: r.avatar_url ?? null });
 const toWorkspace = (r: Row): Workspace => ({ id: r.id, name: r.name, type: r.type, domain: r.domain ?? null });
 const toMember = (r: Row): Member => ({ userId: r.user_id, workspaceId: r.workspace_id, email: r.email, name: r.name, role: r.role, status: r.status });
@@ -68,11 +68,11 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     timers.add(t);
   };
 
-  // nullifier 不直接存,存 HMAC。金鑰由 SESSION_SECRET 衍生
+  // The nullifier is not stored directly; an HMAC is stored. The key is derived from SESSION_SECRET
   const nullifierKey = crypto.createHmac('sha256', cfg.sessionSecret).update('proveback:nullifier').digest();
   const nullifierHash = (n: string) => crypto.createHmac('sha256', nullifierKey).update(n).digest('hex');
 
-  // ---------- 事件 ----------
+  // ---------- Events ----------
   const emit = (meetingId: string, host: Omit<HostEvent, 'meetingId' | 'at'>, pub: Omit<PublicEvent, 'meetingId' | 'at'>) => {
     const at = now();
     bus.emit({ ...host, meetingId, at } as HostEvent, { ...pub, meetingId, at } as PublicEvent);
@@ -86,7 +86,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       { type: 'verification.updated', data: { participantId: p.id, status: p.v_status } },
     );
 
-  // ---------- 查詢 ----------
+  // ---------- Queries ----------
   const meetingRow = (id: string) => db.get('SELECT * FROM meetings WHERE id = ?', id);
   const meetingByToken = (token: string) => db.get('SELECT * FROM meetings WHERE join_token = ?', token);
   const participantRow = (id: string) => db.get('SELECT * FROM participants WHERE id = ?', id);
@@ -106,7 +106,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     sweepExpired(m.id);
     const ws = db.get('SELECT * FROM workspaces WHERE id = ?', m.workspace_id)!;
     const policy = toPolicy(policyRow(m.policy_id)!);
-    // 公開端點只列出還在會議裡的人,而且不含 checks、國籍
+    // The public endpoint only lists people still in the meeting, and omits checks and nationality
     const ps = db.all('SELECT * FROM participants WHERE meeting_id = ? AND left_at IS NULL ORDER BY joined_at, rowid', m.id);
     return {
       title: m.title,
@@ -122,21 +122,21 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     };
   }
 
-  // ---------- 登入 ----------
+  // ---------- Sign-in ----------
   function createWorkspace(userId: string, input: { name: string; type: 'personal' | 'company'; domain?: string | null }): Workspace {
     const id = newId('ws');
     db.tx(() => {
       db.run('INSERT INTO workspaces (id, name, type, domain) VALUES (?, ?, ?, ?)', id, input.name, input.type, input.type === 'company' ? (input.domain?.toLowerCase() || null) : null);
       db.run("INSERT INTO members (workspace_id, user_id, role, status) VALUES (?, ?, 'owner', 'active')", id, userId);
       db.run(
-        "INSERT INTO policies (id, workspace_id, name, is_default, require_ofac_clear, excluded_countries, disclose_nationality, name_match, minimum_age) VALUES (?, ?, '預設政策', 1, 1, '[]', 1, 'warn', NULL)",
+        "INSERT INTO policies (id, workspace_id, name, is_default, require_ofac_clear, excluded_countries, disclose_nationality, name_match, minimum_age) VALUES (?, ?, 'Default policy', 1, 1, '[]', 1, 'warn', NULL)",
         newId('pol'), id,
       );
     });
     return toWorkspace(db.get('SELECT * FROM workspaces WHERE id = ?', id)!);
   }
 
-  /** Google(或假登入)確認身份後呼叫。回傳 session token(明文只給 cookie,資料庫存雜湊) */
+  /** Called after Google (or fake sign-in) confirms identity. Returns a session token (plaintext only goes to the cookie; the database stores a hash) */
   function login(identity: { email: string; name: string; avatarUrl: string | null }): { user: User; token: string } {
     const email = identity.email.toLowerCase();
     let u = db.get('SELECT * FROM users WHERE email = ?', email);
@@ -146,13 +146,13 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       db.run('UPDATE users SET name = ?, avatar_url = ?, activated = 1 WHERE id = ?', identity.name, identity.avatarUrl, u.id);
     }
     u = db.get('SELECT * FROM users WHERE email = ?', email)!;
-    // 被邀請的成員第一次登入就生效
+    // Invited members become active on first sign-in
     db.run("UPDATE members SET status = 'active' WHERE user_id = ? AND status = 'invited'", u.id);
     const hasPersonal = db.get(
       "SELECT 1 AS x FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? AND m.role = 'owner' AND w.type = 'personal'",
       u.id,
     );
-    if (!hasPersonal) createWorkspace(u.id, { name: `${u.name} 的個人空間`, type: 'personal' });
+    if (!hasPersonal) createWorkspace(u.id, { name: `${u.name}'s workspace`, type: 'personal' });
     const token = crypto.randomBytes(32).toString('base64url');
     db.run('INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)', sha256(token), u.id, new Date(Date.now() + 30 * 86400_000).toISOString());
     return { user: toUser(u), token };
@@ -172,8 +172,8 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       .all("SELECT w.* FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? AND m.status = 'active' ORDER BY w.type DESC, w.name", userId)
       .map(toWorkspace);
 
-  // ---------- 參與者 ----------
-  /** 有人進入會議(Recall 的 join 事件,或假資料模式的 devJoin) */
+  // ---------- Participants ----------
+  /** Someone joined the meeting (a Recall join event, or devJoin in fake mode) */
   function participantJoined(meetingId: string, input: { externalId: string; name: string; email?: string | null }): Participant {
     const m = meetingRow(meetingId);
     if (!m) throw new ApiError('not_found', 'Meeting not found');
@@ -189,7 +189,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
         );
       const kind = input.name === cfg.botName ? 'bot' : isMember ? 'member' : 'guest';
       const at = now();
-      // workspace 成員以 Google 帳號辨識,不需要走 Self:固定 verified、checks 為 null
+      // Workspace members are identified by their Google account and do not go through Self: always verified, checks is null
       db.run(
         'INSERT INTO participants (id, meeting_id, external_id, display_name, kind, joined_at, v_status, v_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         newId('par'), meetingId, input.externalId, input.name, kind, at, kind === 'member' ? 'verified' : 'unverified', kind === 'member' ? at : null,
@@ -199,7 +199,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     if (!existing || existing.left_at) {
       emit(meetingId, { type: 'participant.joined', data: toParticipant(p) }, { type: 'participant.joined', data: toPublicParticipant(p) });
     }
-    // 真 Recall:第一個參與者事件代表 bot 已經在會議裡
+    // Real Recall: the first participant event means the bot is already in the meeting
     if (m.bot_status === 'joining' || m.bot_status === 'waiting_room') setBotStatus(meetingId, 'in_meeting');
     return toParticipant(p);
   }
@@ -236,7 +236,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     return toParticipant(fresh);
   }
 
-  // ---------- 驗證 session ----------
+  // ---------- Verification sessions ----------
   function setParticipantFailed(participantId: string, reason: FailureReason, checks: Checks | null) {
     db.run(
       "UPDATE participants SET v_status = 'failed', v_guest_id = NULL, v_returning = 0, v_verified_at = NULL, v_checks = ?, v_failure = ? WHERE id = ?",
@@ -250,7 +250,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     setParticipantFailed(s.participant_id, reason, checks);
   }
 
-  /** 逾時處理:timer 與讀取時都會呼叫,只對仍是 pending 的 session 有作用 */
+  /** Timeout handling: called by the timer and on reads; only affects sessions that are still pending */
   function expireIfDue(sessionId: string) {
     const s = db.get('SELECT * FROM verify_sessions WHERE id = ?', sessionId);
     if (s && s.status === 'pending' && s.expires_at <= now()) failSession(s, 'expired');
@@ -276,7 +276,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       selfSessionId = created.selfSessionId;
     }
     db.tx(() => {
-      // 一個參與者同時只有一個有效 session
+      // A participant has only one active session at a time
       db.run("UPDATE verify_sessions SET status = 'expired', failure_reason = 'expired' WHERE participant_id = ? AND status = 'pending'", p.id);
       db.run(
         "INSERT INTO verify_sessions (id, participant_id, meeting_id, expires_at, status, universal_link, self_session_id) VALUES (?, ?, ?, ?, 'pending', ?, ?)",
@@ -296,12 +296,12 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     return toSession(s);
   }
 
-  /** 套用一份證明。順序:proof_invalid → ofac → excluded_country → underage → name_mismatch → 綁定 */
+  /** Apply a proof. Order: proof_invalid -> ofac -> excluded_country -> underage -> name_mismatch -> binding */
   function applyProof(sessionId: string, proof: Proof): VerifySession {
     expireIfDue(sessionId);
     const s = db.get('SELECT * FROM verify_sessions WHERE id = ?', sessionId);
     if (!s) throw new ApiError('not_found', 'Session not found');
-    if (s.status !== 'pending') return toSession(s); // 已經有結果(或已失效),不重複處理
+    if (s.status !== 'pending') return toSession(s); // Already has a result (or is no longer valid); do not process again
 
     const p = participantRow(s.participant_id)!;
     const m = meetingRow(s.meeting_id)!;
@@ -326,7 +326,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       const score = proof.name ? nameScore(p.display_name, proof.name) : 0;
       nameMatch = { result: score >= NAME_MATCH_THRESHOLD ? 'match' : 'mismatch', score };
     }
-    // 姓名到這裡就不再使用,不會寫進資料庫
+    // The name is not used past this point and is never written to the database
 
     const checks: Checks = {
       ofac: policy.requireOfacClear ? (proof.ofacClear ? 'pass' : 'fail') : 'skipped',
@@ -345,9 +345,9 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
       : null;
     if (reason) return failSession(s, reason, checks), done();
 
-    // 綁定來賓。唯一性完全靠資料庫約束:
-    //   guests   UNIQUE (workspace_id, nullifier_hash) → upsert
-    //   bindings UNIQUE (meeting_id, guest_id)         → 撞到就是 already_bound
+    // Bind the guest. Uniqueness relies entirely on database constraints:
+    //   guests   UNIQUE (workspace_id, nullifier_hash) -> upsert
+    //   bindings UNIQUE (meeting_id, guest_id)         -> a conflict means already_bound
     const at = now();
     const hash = nullifierHash(proof.nullifier);
     const candidateId = newId('gst');
@@ -379,7 +379,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     return done();
   }
 
-  // ---------- 來賓名冊 ----------
+  // ---------- Guest roster ----------
   const guests = (wsId: string): Guest[] =>
     db
       .all(
@@ -392,7 +392,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
         lastVerifiedAt: r.last_verified_at, meetingCount: Number(r.meeting_count), revoked: !!r.revoked,
       }));
 
-  /** 撤銷:清掉 nullifier 雜湊,同一本護照再出現會是新來賓 */
+  /** Revoke: clear the nullifier hash, so the same passport appearing again is a new guest */
   const revokeGuest = (guestId: string) => db.run('UPDATE guests SET revoked = 1, nullifier_hash = NULL WHERE id = ?', guestId);
 
   return {

@@ -36,13 +36,13 @@ CREATE TABLE IF NOT EXISTS participants (
   v_verified_at TEXT, v_checks TEXT, v_failure TEXT,
   UNIQUE (meeting_id, external_id)
 );
--- 一本護照在一個 workspace 只對應一筆來賓。撤銷時把 nullifier_hash 設為 NULL(UNIQUE 允許多個 NULL)
+-- One passport maps to only one guest per workspace. On revoke, nullifier_hash is set to NULL (UNIQUE allows multiple NULLs)
 CREATE TABLE IF NOT EXISTS guests (
   id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, nullifier_hash TEXT, label TEXT NOT NULL, nationality TEXT,
   first_seen_at TEXT NOT NULL, last_verified_at TEXT NOT NULL, revoked INTEGER NOT NULL DEFAULT 0,
   UNIQUE (workspace_id, nullifier_hash)
 );
--- 同一場會議一個來賓只能認領一個參與者
+-- A guest can claim only one participant per meeting
 CREATE TABLE IF NOT EXISTS bindings (
   meeting_id TEXT NOT NULL, guest_id TEXT NOT NULL, participant_id TEXT NOT NULL,
   UNIQUE (meeting_id, guest_id)
@@ -74,7 +74,7 @@ export class Db {
   run(sql: string, ...args: any[]) {
     return this.raw.prepare(sql).run(...args);
   }
-  /** 同步交易:fn 丟例外就 rollback */
+  /** Synchronous transaction: rolls back if fn throws */
   tx<T>(fn: () => T): T {
     this.raw.exec('BEGIN IMMEDIATE');
     try {

@@ -1,4 +1,4 @@
-// 外部服務的薄封裝。只有這個檔案知道 Google / Recall.ai / Self 的 API 長相。
+// Thin wrappers around external services. Only this file knows the shape of the Google / Recall.ai / Self APIs.
 import { webRoutes } from '@proveback/contract';
 import type { Config } from './config';
 import { ApiError } from './util';
@@ -37,7 +37,7 @@ export async function googleExchange(cfg: NonNullable<Config['google']>, code: s
   });
   const tok = (await r.json().catch(() => ({}))) as { id_token?: string; error?: string; error_description?: string };
   if (!r.ok || !tok.id_token) throw new ApiError('upstream_error', tok.error_description || tok.error || 'Google token exchange failed');
-  // id_token 是後端直接向 Google 的 token endpoint 以 TLS 取得,這裡檢查 claims 即可
+  // The id_token is fetched by the backend directly from the Google token endpoint over TLS, so checking the claims here is enough
   const c = JSON.parse(Buffer.from(tok.id_token.split('.')[1] ?? '', 'base64url').toString()) as Record<string, any>;
   const ok =
     c.aud === cfg.clientId &&
@@ -64,7 +64,7 @@ async function recallCall(cfg: NonNullable<Config['recall']>, path: string, body
     throw new ApiError('upstream_error', `Recall unreachable: ${(e as Error).message}`);
   }
   const text = await r.text();
-  if (!r.ok) throw new ApiError('upstream_error', `Recall ${path} → ${r.status}: ${text.slice(0, 200)}`);
+  if (!r.ok) throw new ApiError('upstream_error', `Recall ${path} -> ${r.status}: ${text.slice(0, 200)}`);
   return text ? (JSON.parse(text) as Record<string, any>) : {};
 }
 
@@ -74,7 +74,7 @@ export async function recallCreateBot(cfg: Config, m: { meetingId: string; meetU
     meeting_url: m.meetUrl,
     bot_name: cfg.botName,
     metadata: { meetingId: m.meetingId },
-    // bot 的視訊畫面 = 前端的 bot 畫面頁(QR + 即時名單)
+    // The bot video feed = the frontend bot screen page (QR + live roster)
     output_media: { camera: { kind: 'webpage', config: { url: cfg.webUrl + webRoutes.botScreen(m.joinToken) } } },
     recording_config: {
       realtime_endpoints: [
@@ -92,7 +92,7 @@ export async function recallCreateBot(cfg: Config, m: { meetingId: string; meetU
 
 export const recallLeave = (cfg: Config, botId: string) => recallCall(cfg.recall!, `/bot/${botId}/leave_call/`, {});
 
-// ---------- Self(off-chain:託管 SDK 建 session,證明以 webhook 送回後端驗簽) ----------
+// ---------- Self (off-chain: the hosted SDK creates the session, and the proof is sent back to the backend by webhook for signature verification) ----------
 type SelfSdk = typeof import('@selfxyz/enterprise-sdk');
 let sdk: Promise<SelfSdk> | null = null;
 const selfSdk = () => (sdk ??= import('@selfxyz/enterprise-sdk'));
@@ -104,7 +104,7 @@ export async function selfCreateSession(cfg: Config, s: { sessionId: string; joi
     const created = await new SelfClient({ apiKey: cfg.self!.apiKey }).sessions.create({
       flowId: cfg.self!.flowId,
       externalUuid: s.sessionId,
-      expiresInSeconds: Math.max(60, cfg.sessionTtlSec), // Self 的下限是 60 秒
+      expiresInSeconds: Math.max(60, cfg.sessionTtlSec), // Self requires at least 60 seconds
       successUrl: back,
       failureUrl: back,
     });

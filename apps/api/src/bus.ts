@@ -1,4 +1,4 @@
-// 記憶體內的事件匯流排:每場會議兩個頻道(主辦方、公開)
+// In-memory event bus: two channels per meeting (host, public)
 import type { HostEvent, PublicEvent } from '@proveback/contract';
 
 type Listener<E> = (event: E) => void;

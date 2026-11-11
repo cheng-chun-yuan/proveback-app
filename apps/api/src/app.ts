@@ -48,7 +48,7 @@ export function createApp(cfg: Config = loadConfig()) {
     if (!user) throw new ApiError('unauthenticated', 'Login required');
     return user;
   }
-  /** 必須是該 workspace 的有效成員;admin = 需要 owner 或 admin */
+  /** Must be an active member of the workspace; admin = requires owner or admin */
   function requireMember(user: User, wsId: string, admin = false): Row {
     if (!db.get('SELECT 1 AS x FROM workspaces WHERE id = ?', wsId)) throw new ApiError('not_found', 'Workspace not found');
     const m = db.get("SELECT * FROM members WHERE workspace_id = ? AND user_id = ? AND status = 'active'", wsId, user.id);
@@ -70,13 +70,13 @@ export function createApp(cfg: Config = loadConfig()) {
   }
   const setSession = (c: Context, token: string) =>
     setCookie(c, COOKIE, token, { httpOnly: true, sameSite: 'Lax', path: '/', secure: cfg.webUrl.startsWith('https://'), maxAge: 30 * 86400 });
-  // 只允許導回站內的相對路徑
+  // Only allow redirects to relative paths within the site
   const safeRedirect = (r: string | undefined) => (r && /^\/(?![/\\])/.test(r) ? r : '/');
   const devOnly = (isFake: boolean) => {
     if (!isFake) throw new ApiError('not_found', 'Not found');
   };
 
-  /** SSE:先訂閱再送 snapshot,確保兩者之間的事件不會漏掉 */
+  /** SSE: subscribe first, then send the snapshot, so no events between the two are missed */
   function sse<E>(c: Context, subscribe: (fn: (e: E) => void) => () => void, snapshot: () => E) {
     return streamSSE(c, async (stream) => {
       const queue: E[] = [];
@@ -118,7 +118,7 @@ export function createApp(cfg: Config = loadConfig()) {
     });
   }
 
-  // ---------- 4.1 登入 ----------
+  // ---------- 4.1 Sign-in ----------
   app.get(P(paths.authGoogleStart), (c) => {
     const redirect = safeRedirect(c.req.query('redirect'));
     if (!cfg.google) return c.redirect(`${cfg.webUrl}${webRoutes.devLogin}?redirect=${encodeURIComponent(redirect)}`, 302);
@@ -133,9 +133,9 @@ export function createApp(cfg: Config = loadConfig()) {
     if (!cfg.google) throw new ApiError('not_found', 'Not found');
     const st = db.get('SELECT * FROM oauth_states WHERE state = ?', c.req.query('state') ?? '');
     if (!st || st.created_at < new Date(Date.now() - 600_000).toISOString()) throw new ApiError('validation_failed', 'Invalid or expired login state');
-    db.run('DELETE FROM oauth_states WHERE state = ?', st.state); // 一次性
+    db.run('DELETE FROM oauth_states WHERE state = ?', st.state); // single use
     const code = c.req.query('code');
-    if (!code) return c.redirect(cfg.webUrl + webRoutes.login, 302); // 使用者取消
+    if (!code) return c.redirect(cfg.webUrl + webRoutes.login, 302); // user cancelled
     const identity = await googleExchange(cfg.google, code, st.nonce);
     setSession(c, core.login(identity).token);
     return c.redirect(cfg.webUrl + st.redirect, 302);
@@ -152,7 +152,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return c.json({ user, workspaces: core.workspacesOf(user.id) } satisfies MeResponse);
   });
 
-  // ---------- 4.2 Workspace 與成員 ----------
+  // ---------- 4.2 Workspaces and members ----------
   app.post(P(paths.workspaces), async (c) => {
     const user = requireUser(c);
     return c.json(core.createWorkspace(user.id, await body(c, CreateWorkspaceBody)));
@@ -180,7 +180,7 @@ export function createApp(cfg: Config = loadConfig()) {
     const email = input.email.toLowerCase();
     let u = db.get('SELECT * FROM users WHERE email = ?', email);
     if (!u) {
-      // 還沒登入過的人:先建一筆未啟用的 user,成員狀態為 invited,第一次登入時轉 active
+      // Someone who has never signed in: create an inactive user first, with member status invited, which becomes active on first sign-in
       db.run('INSERT INTO users (id, email, name, activated) VALUES (?, ?, ?, 0)', newId('usr'), email, email);
       u = db.get('SELECT * FROM users WHERE email = ?', email)!;
     }
@@ -215,7 +215,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return c.body(null, 204);
   });
 
-  // ---------- 4.3 驗證政策 ----------
+  // ---------- 4.3 Verification policies ----------
   app.get(P(paths.policies), (c) => {
     requireMember(requireUser(c), param(c, 'wsId'));
     return c.json({ items: db.all('SELECT * FROM policies WHERE workspace_id = ? ORDER BY is_default DESC, rowid', param(c, 'wsId')).map(core.toPolicy) });
@@ -267,7 +267,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return c.body(null, 204);
   });
 
-  // ---------- 4.4 會議 ----------
+  // ---------- 4.4 Meetings ----------
   app.get(P(paths.meetings), (c) => {
     requireMember(requireUser(c), param(c, 'wsId'));
     return c.json({ items: db.all('SELECT * FROM meetings WHERE workspace_id = ? ORDER BY created_at DESC, rowid DESC', param(c, 'wsId')).map(core.toMeeting) });
@@ -303,7 +303,7 @@ export function createApp(cfg: Config = loadConfig()) {
       }
       core.setBotStatus(meeting.id, 'joining');
     } else {
-      // 假資料模式:過一下子 bot 就「進入會議」
+      // Fake mode: after a short delay the bot "joins the meeting"
       core.setBotStatus(meeting.id, 'joining');
       core.later(cfg.fakeBotDelayMs, () => {
         if (core.meetingRow(meeting.id)?.bot_status === 'joining') core.participantJoined(meeting.id, { externalId: 'bot', name: cfg.botName });
@@ -335,7 +335,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return sse<HostEvent>(c, (fn) => bus.onHost(meeting.id, fn), () => ({ type: 'snapshot', meetingId: meeting.id, at: now(), data: core.meetingDetail(meeting.id) }));
   });
 
-  // ---------- 4.5 來賓名冊 ----------
+  // ---------- 4.5 Guest roster ----------
   app.get(P(paths.guests), (c) => {
     requireMember(requireUser(c), param(c, 'wsId'));
     return c.json({ items: core.guests(param(c, 'wsId')) });
@@ -350,7 +350,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return c.body(null, 204);
   });
 
-  // ---------- 4.6 公開端點(joinToken / sessionId 就是憑證) ----------
+  // ---------- 4.6 Public endpoints (joinToken / sessionId act as the credential) ----------
   app.get(P(paths.publicMeeting), (c) => c.json(core.publicMeeting(publicMeetingRow(c))));
 
   app.post(P(paths.publicSessions), async (c) => {
@@ -366,7 +366,7 @@ export function createApp(cfg: Config = loadConfig()) {
     return sse<PublicEvent>(c, (fn) => bus.onPublic(m.id, fn), () => ({ type: 'snapshot', meetingId: m.id, at: now(), data: core.publicMeeting(core.meetingRow(m.id)!) }));
   });
 
-  // ---------- 開發用端點(只有對應的外部服務是假資料模式時才存在) ----------
+  // ---------- Dev endpoints (only present when the matching external service is in fake mode) ----------
   app.get(P(paths.devStatus), (c) => {
     devOnly(fake.google || fake.recall || fake.self);
     return c.json({ fake } satisfies DevStatus);
@@ -410,7 +410,7 @@ export function createApp(cfg: Config = loadConfig()) {
     );
   });
 
-  // ---------- 4.7 後端專用 webhook(不屬於前後端契約) ----------
+  // ---------- 4.7 Backend-only webhooks (not part of the frontend/backend contract) ----------
   app.post('/webhooks/recall', async (c) => {
     if (!cfg.recall) throw new ApiError('not_found', 'Not found');
     if (!cfg.recall.webhookToken || c.req.query('token') !== cfg.recall.webhookToken) throw new ApiError('unauthenticated', 'Bad webhook token');
@@ -424,11 +424,11 @@ export function createApp(cfg: Config = loadConfig()) {
 
     const participant = data.data?.participant;
     if (event === 'participant_events.join' && participant) {
-      core.participantJoined(meeting.id, { externalId: String(participant.id), name: participant.name || '與會者', email: participant.email ?? null });
+      core.participantJoined(meeting.id, { externalId: String(participant.id), name: participant.name || 'Participant', email: participant.email ?? null });
     } else if (event === 'participant_events.leave' && participant) {
       core.participantLeftByExternalId(meeting.id, String(participant.id));
     } else {
-      // bot 狀態事件:Recall 的格式未實測,這裡盡力對應(新舊兩種寫法)
+      // Bot status events: the Recall format is untested, so this is a best-effort mapping (both old and new formats)
       const code = event === 'bot.status_change' ? String(data.status?.code ?? '') : event.replace(/^bot\./, '');
       const map: Record<string, 'joining' | 'waiting_room' | 'in_meeting' | 'left' | 'error'> = {
         joining_call: 'joining', in_waiting_room: 'waiting_room', in_call_not_recording: 'in_meeting', in_call_recording: 'in_meeting',
@@ -442,7 +442,7 @@ export function createApp(cfg: Config = loadConfig()) {
 
   app.post('/webhooks/self', async (c) => {
     if (!cfg.self) throw new ApiError('not_found', 'Not found');
-    const raw = await c.req.text(); // 驗簽要用原始 body
+    const raw = await c.req.text(); // signature verification needs the raw body
     let event: Awaited<ReturnType<typeof selfVerifyWebhook>>;
     try {
       event = await selfVerifyWebhook(cfg, raw, Object.fromEntries(c.req.raw.headers));
@@ -464,7 +464,7 @@ export function createApp(cfg: Config = loadConfig()) {
       try {
         core.applyProof(event.external_uuid, proof);
       } catch (e) {
-        if (!(e instanceof ApiError && e.code === 'not_found')) throw e; // 不認得的 session:照樣回 200,避免 Self 一直重送
+        if (!(e instanceof ApiError && e.code === 'not_found')) throw e; // Unknown session: still return 200 so Self does not keep retrying
       }
     }
     return c.text('ok', 200);
