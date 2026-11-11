@@ -131,6 +131,8 @@ export const PublicParticipant = z.object({
   displayName: z.string(),
   kind: ParticipantKind,
   status: VerificationStatus,
+  /** v1 additive: the verified guest's nationality, only when the meeting's policy discloses it. Absent or null otherwise. */
+  nationality: Country.nullable().optional(),
 });
 export type PublicParticipant = z.infer<typeof PublicParticipant>;
 

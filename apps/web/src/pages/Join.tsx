@@ -18,7 +18,7 @@ function Disclosures({ d }: { d: PublicMeeting['disclosures'] }) {
       <ul className="disclosures">
         {d.ofac && <li><CheckIcon />That you are not on a sanctions list. The host sees only pass or fail.</li>}
         {d.excludedCountries.length > 0 && <li><CheckIcon />That your nationality is not one of: {d.excludedCountries.join(', ')}.</li>}
-        <li><CheckIcon />{d.nationality ? 'Your nationality, shown to the host.' : 'Nothing about your nationality is shown to the host.'}</li>
+        <li><CheckIcon />{d.nationality ? 'Your nationality, shown to the host and on the board in the call.' : 'Nothing about your nationality is shown to the host.'}</li>
         {d.nameMatch && <li><CheckIcon />That your passport name matches your name in the call. The name is compared, then discarded.</li>}
         {d.minimumAge !== null && <li><CheckIcon />That you are at least {d.minimumAge}. Your date of birth stays private.</li>}
         <li><CheckIcon />An anonymous code for this passport, so this host recognises you next time.</li>
@@ -114,7 +114,7 @@ export function JoinPage() {
         <p>Hosted by {m.workspaceName}</p>
         {rowStatus && (
           <div className="my-row">
-            <BoardRow stack size="md" name={who?.displayName ?? 'YOU'} status={boardWord[rowStatus]} tone={boardTone[rowStatus]} lamp={boardTone[rowStatus]} />
+            <BoardRow stack size="md" name={who?.displayName ?? 'YOU'} note={rowStatus === 'verified' ? who?.nationality : null} status={boardWord[rowStatus]} tone={boardTone[rowStatus]} lamp={boardTone[rowStatus]} />
           </div>
         )}
       </header>

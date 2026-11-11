@@ -80,6 +80,7 @@ export function BotScreenPage() {
                         <BoardRow
                           size="xl"
                           name={p.displayName}
+                          note={p.nationality}
                           status={p.kind === 'member' ? 'MEMBER' : boardWord[p.status]}
                           tone={p.kind === 'member' ? 'paint' : boardTone[p.status]}
                         />

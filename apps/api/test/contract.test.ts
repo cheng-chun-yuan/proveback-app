@@ -152,7 +152,7 @@ describe('Meetings and bots', () => {
 });
 
 describe('Verification flow', () => {
-  it('guest completes verification: verified, guest bound, nationality only visible to the host', async () => {
+  it('guest completes verification: verified, guest bound, nationality shown publicly only as the policy allows', async () => {
     ctx = makeApp();
     const { host, wsId, meeting, join } = await setup(ctx);
     const ken = await join(meeting.id, 'Ken Sato');
@@ -186,10 +186,10 @@ describe('Verification flow', () => {
     const again = await anon.ok(VerifySession, 'POST', url('devCompleteSession', { sessionId: s.id }), passport({ nationality: 'PRK' }));
     expect(again.status).toBe('verified');
 
-    // The public endpoint does not leak checks, nationality or name
+    // The public endpoint shows the nationality code (this policy discloses it) but never checks, the guest id or the passport name
     const pubAfter = await anon.raw('GET', url('publicMeeting', { joinToken: meeting.joinToken })).then((r) => r.text());
-    expect(pubAfter).not.toMatch(/JPN|checks|nationality":\s*\{|guestId|SATO/);
-    expect(PublicMeeting.parse(JSON.parse(pubAfter)).participants.find((p) => p.id === ken.id)).toEqual({ id: ken.id, displayName: 'Ken Sato', kind: 'guest', status: 'verified' });
+    expect(pubAfter).not.toMatch(/checks|nationality":\s*\{|guestId|SATO/);
+    expect(PublicMeeting.parse(JSON.parse(pubAfter)).participants.find((p) => p.id === ken.id)).toEqual({ id: ken.id, displayName: 'Ken Sato', kind: 'guest', status: 'verified', nationality: 'JPN' });
     const sessionText = await anon.raw('GET', url('publicSession', { sessionId: s.id })).then((r) => r.text());
     expect(sessionText).not.toMatch(/JPN|SATO|P-001/);
     // The database has no passport name, passport number or plaintext nullifier
@@ -360,7 +360,7 @@ describe('SSE', () => {
     return { next, close: () => reader.cancel() };
   }
 
-  it('two channels: snapshot first, then incremental events; the public channel omits checks and nationality', async () => {
+  it('two channels: snapshot first, then incremental events; the public channel omits checks', async () => {
     ctx = makeApp();
     const { host, meeting, join, verify } = await setup(ctx);
     const hostStream = await open(host, url('meetingEvents', { mtgId: meeting.id }));
@@ -377,7 +377,7 @@ describe('SSE', () => {
     const p1 = PublicEvent.parse(await pubStream.next());
     expect(h1).toMatchObject({ type: 'participant.joined', data: { id: ken.id, verification: { status: 'unverified' } } });
     expect(p1).toMatchObject({ type: 'participant.joined', data: { id: ken.id, displayName: 'Ken Sato', kind: 'guest', status: 'unverified' } });
-    expect(Object.keys((p1 as any).data).sort()).toEqual(['displayName', 'id', 'kind', 'status']);
+    expect(Object.keys((p1 as any).data).sort()).toEqual(['displayName', 'id', 'kind', 'nationality', 'status']);
 
     await verify(meeting.joinToken, ken.id);
     const h2 = HostEvent.parse(await hostStream.next());

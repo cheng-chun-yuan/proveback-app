@@ -276,3 +276,6 @@ strong, b { font-weight: 600; }
 .tally-xl .tally-ring { width: 96px; height: 96px; }
 .tally-xl .tally-num { font-size: 76px; white-space: nowrap; }
 .tally-xl .tally-label { white-space: nowrap; }
+
+/* Nationality code beside a verified guest's name */
+.prow-note { margin-left: 0.6em; font-size: 0.7em; font-weight: 500; color: var(--dim); letter-spacing: 0.04em; }

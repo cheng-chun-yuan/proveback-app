@@ -6,11 +6,13 @@ export type LampTone = 'ok' | 'now' | 'bad' | 'dim' | 'off';
 
 export function BoardRow({
   name,
+  note,
   status,
   tone = 'paint',
   size = 'md',
 }: {
   name: string;
+  note?: string | null;
   status: string;
   tone?: FlapTone;
   lamp?: LampTone;
@@ -19,7 +21,7 @@ export function BoardRow({
 }) {
   return (
     <span className={`prow prow-${size}`}>
-      <span className="prow-name">{name}</span>
+      <span className="prow-name">{name}{note && <span className="prow-note">{note}</span>}</span>
       <Flap text={status} tone={tone} size={size} />
     </span>
   );

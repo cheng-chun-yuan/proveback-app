@@ -45,7 +45,12 @@ const toParticipant = (r: Row): Participant => ({
   id: r.id, meetingId: r.meeting_id, displayName: r.display_name, kind: r.kind, joinedAt: r.joined_at, leftAt: r.left_at ?? null,
   verification: toVerification(r),
 });
-const toPublicParticipant = (r: Row): PublicParticipant => ({ id: r.id, displayName: r.display_name, kind: r.kind, status: r.v_status });
+// checks.nationality.value is already null unless the policy discloses nationality
+const publicNationality = (r: Row): string | null =>
+  r.v_status === 'verified' && r.v_checks ? ((JSON.parse(r.v_checks) as Checks).nationality?.value ?? null) : null;
+const toPublicParticipant = (r: Row): PublicParticipant => ({
+  id: r.id, displayName: r.display_name, kind: r.kind, status: r.v_status, nationality: publicNationality(r),
+});
 const sessionOf = (r: Row): VerifySession => ({
   id: r.id, participantId: r.participant_id, expiresAt: r.expires_at, status: r.status, failureReason: r.failure_reason ?? null,
   selfApp: null, universalLink: r.universal_link,
