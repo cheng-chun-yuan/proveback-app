@@ -4,6 +4,7 @@ import { webRoutes, type PublicParticipant } from '@proveback/contract';
 import { usePublicMeeting } from '../lib/usePublicMeeting';
 import { boardTone, boardWord } from '../lib/labels';
 import { BoardRow } from '../components/BoardRow';
+import { Tally } from '../components/Tally';
 import { Qr } from '../components/ui';
 
 // Recall streams this page as the bot's camera: 1280x720 at 15 fps, usually seen as a small tile.
@@ -63,11 +64,13 @@ export function BotScreenPage() {
                 <p className="bot-brand">ProveBack</p>
               </section>
               <section className="bot-main">
-                <h1>{meeting.data.title}</h1>
-                <div className="bot-rule">
-                  <span>{meeting.data.workspaceName}</span>
-                  <strong>{verified} / {guests.length} verified</strong>
-                </div>
+                <header className="bot-head">
+                  <div className="bot-title">
+                    <h1>{meeting.data.title}</h1>
+                    <p>{meeting.data.workspaceName}</p>
+                  </div>
+                  <Tally done={verified} total={guests.length} size="xl" />
+                </header>
                 {people.length === 0 ? (
                   <p className="bot-empty">Waiting for guests to join the call</p>
                 ) : (

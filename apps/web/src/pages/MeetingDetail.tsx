@@ -8,6 +8,7 @@ import { boardTone, boardWord, botLabel, botTone, failureLabel, formatTime, kind
 import { useWorkspace } from '../components/Layout';
 import { Flap } from '../components/Flap';
 import { BoardRow } from '../components/BoardRow';
+import { Tally } from '../components/Tally';
 import { CopyField, Empty, ErrorBox, FormError, Loading } from '../components/ui';
 
 function applyEvent(prev: MeetingDetail, e: HostEvent): MeetingDetail {
@@ -198,7 +199,7 @@ export function MeetingDetailPage() {
         <section className="card">
           <div className="card-head">
             <h2>In the call</h2>
-            <span className="tally">{verified} / {guests.length} guests verified</span>
+            <Tally done={verified} total={guests.length} />
           </div>
           {present.length === 0 && <Empty>Nobody is in the call yet. Send the bot and participants appear here as they join.</Empty>}
           <ul className="participants">
