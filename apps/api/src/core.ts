@@ -46,7 +46,7 @@ const toParticipant = (r: Row): Participant => ({
   verification: toVerification(r),
 });
 const toPublicParticipant = (r: Row): PublicParticipant => ({ id: r.id, displayName: r.display_name, kind: r.kind, status: r.v_status });
-const sessionOf = (r: Row): VerifySession => ({
+const toSession = (r: Row): VerifySession => ({
   id: r.id, participantId: r.participant_id, expiresAt: r.expires_at, status: r.status, failureReason: r.failure_reason ?? null,
   selfApp: null, universalLink: r.universal_link,
 });
@@ -54,15 +54,6 @@ const sessionOf = (r: Row): VerifySession => ({
 export type Core = ReturnType<typeof createCore>;
 
 export function createCore(cfg: Config, db: Db, bus: Bus) {
-  // A Self link carries the whole app configuration and makes a QR code too dense to scan.
-  // Hand out a short link on this API instead; it redirects to the stored Self link.
-  const SHORT_LINK_OVER = 300;
-  const toSession = (r: Row): VerifySession => {
-    const s = sessionOf(r);
-    return s.universalLink.length > SHORT_LINK_OVER ? { ...s, universalLink: `${cfg.publicApiUrl}/api/v1/public/sessions/${r.id}/self` } : s;
-  };
-  const selfLinkOf = async (sessionId: string): Promise<string | null> =>
-    ((await db.get('SELECT universal_link FROM verify_sessions WHERE id = ?', sessionId))?.universal_link as string | undefined) ?? null;
   const timers = new Set<NodeJS.Timeout>();
   let stopped = false;
   /** Local only. On serverless nothing may depend on a timer firing after the response (see cfg.inlineTimers). */
@@ -452,7 +443,7 @@ export function createCore(cfg: Config, db: Db, bus: Bus) {
     meetingDetail, publicMeeting,
     createWorkspace, login, userByToken, logout, workspacesOf,
     participantJoined, participantLeft, participantLeftByExternalId, setBotStatus, resetParticipant,
-    createSession, getSession, selfLinkOf, applyProof, selfOpenSession, guests, revokeGuest, later,
+    createSession, getSession, applyProof, selfOpenSession, guests, revokeGuest, later,
     stop: () => {
       stopped = true;
       for (const t of timers) clearTimeout(t);

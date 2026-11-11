@@ -409,12 +409,6 @@ export function createApp(cfg: Config = loadConfig()) {
   });
 
   app.get(P(paths.publicSession), async (c) => c.json(await core.getSession(param(c, 'sessionId'))));
-  // Short link for the Self QR code and button: redirects to the full Self link kept with the session
-  app.get(P(`${paths.publicSession}/self`), async (c) => {
-    const link = await core.selfLinkOf(param(c, 'sessionId'));
-    if (!link) throw new ApiError('not_found', 'Session not found');
-    return c.redirect(link, 302);
-  });
 
   app.get(P(paths.publicEvents), async (c) => {
     const m = await publicMeetingRow(c);
