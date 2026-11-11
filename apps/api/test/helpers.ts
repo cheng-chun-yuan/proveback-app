@@ -1,0 +1,80 @@
+import { expect } from 'vitest';
+import type { z } from 'zod';
+import { ErrorBody, Meeting, Participant, Policy, VerifySession, url, type CreatePolicyBody, type DevCompleteSessionBody } from '@proveback/contract';
+import { createApp } from '../src/app';
+import { loadConfig, type Config } from '../src/config';
+
+export function makeApp(overrides: Partial<Config> = {}) {
+  // 空的 env → 三個外部服務全部是假資料模式
+  return createApp({ ...loadConfig({}), dbPath: ':memory:', sessionSecret: 'test-secret', fakeBotDelayMs: 5, ...overrides });
+}
+export type Ctx = ReturnType<typeof makeApp>;
+
+export class Client {
+  cookie = '';
+  constructor(readonly ctx: Ctx) {}
+
+  async raw(method: string, path: string, body?: unknown) {
+    const res = await this.ctx.app.request(path, {
+      method,
+      headers: { ...(this.cookie ? { cookie: this.cookie } : {}), ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    const set = res.headers.get('set-cookie');
+    if (set) this.cookie = set.split(';')[0]!;
+    return res;
+  }
+  /** 預期成功,並用契約 schema 驗證回應 */
+  async ok<S extends z.ZodTypeAny>(schema: S, method: string, path: string, body?: unknown): Promise<z.infer<S>> {
+    const res = await this.raw(method, path, body);
+    const text = await res.text();
+    expect(res.status, `${method} ${path} → ${text}`).toBe(200);
+    return schema.parse(JSON.parse(text));
+  }
+  /** 預期失敗,並驗證錯誤格式 */
+  async fail(status: number, code: string, method: string, path: string, body?: unknown) {
+    const res = await this.raw(method, path, body);
+    expect(res.status, `${method} ${path}`).toBe(status);
+    const err = ErrorBody.parse(await res.json());
+    expect(err.error.code).toBe(code);
+  }
+  async login(email: string, name = email.split('@')[0]!) {
+    const res = await this.raw('POST', url('devLogin'), { email, name });
+    expect(res.status).toBe(204);
+    return this;
+  }
+}
+
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export const basePolicy: CreatePolicyBody = {
+  name: '測試政策', isDefault: false, requireOfacClear: true, excludedCountries: ['PRK'], discloseNationality: true, nameMatch: 'warn', minimumAge: null,
+};
+
+export const passport = (over: Partial<DevCompleteSessionBody> = {}): DevCompleteSessionBody => ({
+  passportId: 'P-001', name: 'SATO KEN', nationality: 'JPN', ofacClear: true, age: 30, ...over,
+});
+
+/** 登入的主辦方 + 一個 workspace + 政策 + 已有 bot 的會議 */
+export async function setup(ctx: Ctx, policy: Partial<CreatePolicyBody> = {}) {
+  const host = await new Client(ctx).login('alice@acme.com', 'Alice Chen');
+  const me = await host.raw('GET', url('me')).then((r) => r.json() as Promise<{ workspaces: { id: string }[] }>);
+  const wsId = me.workspaces[0]!.id;
+  const pol = await host.ok(Policy, 'POST', url('policies', { wsId }), { ...basePolicy, ...policy });
+  const newMeeting = async (title = '會議') => {
+    const m = await host.ok(Meeting, 'POST', url('meetings', { wsId }), { title, meetUrl: 'https://meet.google.com/abc-defg-hij', policyId: pol.id });
+    await host.ok(Meeting, 'POST', url('meetingBot', { mtgId: m.id }));
+    await sleep(30);
+    return m;
+  };
+  const meeting = await newMeeting();
+  const join = (mtgId: string, displayName: string, email?: string) =>
+    host.ok(Participant, 'POST', url('devJoin', { mtgId }), { displayName, ...(email ? { email } : {}) });
+  /** 來賓走完一次驗證,回傳 session 的最終狀態 */
+  const verify = async (joinToken: string, participantId: string, proof = passport()) => {
+    const anon = new Client(ctx);
+    const s = await anon.ok(VerifySession, 'POST', url('publicSessions', { joinToken }), { participantId });
+    return anon.ok(VerifySession, 'POST', url('devCompleteSession', { sessionId: s.id }), proof);
+  };
+  return { host, wsId, policy: pol, meeting, newMeeting, join, verify };
+}
