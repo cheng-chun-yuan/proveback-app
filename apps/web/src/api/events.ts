@@ -1,4 +1,4 @@
-// 即時事件。正式走 EventSource;mock 模式改接記憶體內的事件匯流排(介面相同)。
+// Live events. Production uses EventSource; mock mode uses an in-memory event bus instead (same interface).
 import { HostEvent, PublicEvent, eventTypes, url } from '@proveback/contract';
 import type { z } from 'zod';
 
@@ -30,15 +30,15 @@ function openEventSource<S extends z.ZodTypeAny>(path: string, schema: S, h: Str
       }
       const parsed = schema.safeParse(json);
       if (parsed.success) h.onEvent(parsed.data);
-      else console.warn('收到不符合契約的事件', json, parsed.error.issues);
+      else console.warn('Received an event that does not match the contract', json, parsed.error.issues);
     };
-    // 後端可能用預設的 message 事件,也可能用具名事件,兩種都聽
+    // The backend may send default message events or named events; listen for both
     source.onmessage = handle;
     for (const type of eventTypes) source.addEventListener(type, handle as EventListener);
     source.onopen = () => h.onState?.('open');
     source.onerror = () => {
       h.onState?.('reconnecting');
-      // 瀏覽器會自己重連;只有連線被判定為關閉時才需要手動重開。重連後第一筆是 snapshot,不需補資料
+      // The browser reconnects by itself; reopen manually only if the connection is considered closed. The first event after reconnecting is a snapshot, so no backfill is needed
       if (source.readyState === EventSource.CLOSED) {
         source.close();
         timer = setTimeout(connect, 2000);
@@ -69,13 +69,13 @@ function openMock<E>(subscribe: (store: typeof import('../mock/store')) => Close
   };
 }
 
-/** 主辦方頻道 */
+/** Host channel */
 export function subscribeHost(mtgId: string, h: StreamHandlers<HostEvent>): Close {
   if (import.meta.env.VITE_MOCK === '1') return openMock((s) => s.subscribeHost(mtgId, h.onEvent), h);
   return openEventSource(url('meetingEvents', { mtgId }), HostEvent, h);
 }
 
-/** 公開頻道(來賓頁、bot 畫面頁) */
+/** Public channel (guest page, bot screen page) */
 export function subscribePublic(joinToken: string, h: StreamHandlers<PublicEvent>): Close {
   if (import.meta.env.VITE_MOCK === '1') return openMock((s) => s.subscribePublic(joinToken, h.onEvent), h);
   return openEventSource(url('publicEvents', { joinToken }), PublicEvent, h);

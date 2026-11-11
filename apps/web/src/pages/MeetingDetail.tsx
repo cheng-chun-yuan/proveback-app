@@ -4,9 +4,10 @@ import { webRoutes, type DevStatus, type HostEvent, type MeetingDetail, type Par
 import { api } from '../api/client';
 import { subscribeHost, type StreamState } from '../api/events';
 import { useAction, useLoad } from '../lib/hooks';
-import { botLabel, failureLabel, formatTime, kindLabel, meetingLabel } from '../lib/labels';
+import { boardTone, boardWord, botLabel, botTone, failureLabel, formatTime, kindLabel, meetingLabel } from '../lib/labels';
 import { useWorkspace } from '../components/Layout';
-import { Chip, CopyField, DevTag, Empty, ErrorBox, FormError, Loading, StatusBadge } from '../components/ui';
+import { Flap } from '../components/Flap';
+import { CopyField, DevTag, Empty, ErrorBox, FormError, Loading } from '../components/ui';
 
 function applyEvent(prev: MeetingDetail, e: HostEvent): MeetingDetail {
   switch (e.type) {
@@ -28,53 +29,61 @@ function applyEvent(prev: MeetingDetail, e: HostEvent): MeetingDetail {
 function Checks({ v }: { v: Verification }) {
   const c = v.checks;
   if (!c) return null;
-  const tone = (r: 'pass' | 'fail' | 'skipped') => (r === 'pass' ? 'good' : r === 'fail' ? 'bad' : 'neutral');
-  const word = (r: 'pass' | 'fail' | 'skipped') => (r === 'pass' ? '通過' : r === 'fail' ? '未通過' : '未檢查');
+  const word = (r: 'pass' | 'fail' | 'skipped') => (r === 'pass' ? 'Pass' : r === 'fail' ? 'Fail' : 'Not checked');
+  const cls = (r: 'pass' | 'fail' | 'skipped') => (r === 'fail' ? 'is-bad' : r === 'skipped' ? 'is-skipped' : '');
   return (
-    <span className="checks">
-      <Chip tone={tone(c.ofac)}>制裁名單:{word(c.ofac)}</Chip>
+    <dl className="checks">
+      <div className={cls(c.ofac)}><dt>Sanctions</dt><dd>{word(c.ofac)}</dd></div>
       {c.nationality && (
-        <Chip tone={c.nationality.allowed ? 'good' : 'bad'}>
-          國籍:{c.nationality.value ?? '不揭露'}{c.nationality.allowed ? '' : '(在排除名單)'}
-        </Chip>
+        <div className={c.nationality.allowed ? '' : 'is-bad'}>
+          <dt>Nationality</dt>
+          <dd>{c.nationality.value ?? 'Not disclosed'}{c.nationality.allowed ? '' : ' (excluded)'}</dd>
+        </div>
       )}
-      <Chip tone={c.nameMatch.result === 'match' ? 'good' : c.nameMatch.result === 'mismatch' ? 'warn' : 'neutral'}>
-        姓名:{c.nameMatch.result === 'match' ? '相符' : c.nameMatch.result === 'mismatch' ? '不符' : '未比對'}
-        {c.nameMatch.score !== null && `(${Math.round(c.nameMatch.score * 100)}%)`}
-      </Chip>
-      <Chip tone={tone(c.age)}>年齡:{word(c.age)}</Chip>
-    </span>
+      <div className={c.nameMatch.result === 'mismatch' ? 'is-bad' : c.nameMatch.result === 'skipped' ? 'is-skipped' : ''}>
+        <dt>Name</dt>
+        <dd>
+          {c.nameMatch.result === 'match' ? 'Match' : c.nameMatch.result === 'mismatch' ? 'Mismatch' : 'Not compared'}
+          {c.nameMatch.score !== null && ` ${Math.round(c.nameMatch.score * 100)}%`}
+        </dd>
+      </div>
+      <div className={cls(c.age)}><dt>Age</dt><dd>{word(c.age)}</dd></div>
+    </dl>
   );
 }
 
 function ParticipantRow({ p, mtgId, fakeRecall }: { p: Participant; mtgId: string; fakeRecall: boolean }) {
   const action = useAction();
   const v = p.verification;
+  const canReset = p.kind === 'guest' && v.status !== 'unverified';
+  const canLeave = fakeRecall && !p.leftAt && p.kind !== 'bot';
   return (
     <li className={`participant ${p.leftAt ? 'is-left' : ''}`}>
       <div className="participant-head">
         <strong>{p.displayName}</strong>
-        <Chip>{kindLabel[p.kind]}</Chip>
-        {p.kind !== 'bot' && <StatusBadge status={v.status} />}
-        {v.returning && <Chip tone="info">曾經驗證過的來賓</Chip>}
-        {p.leftAt && <Chip>已離開</Chip>}
-        <span className="participant-actions">
-          {p.kind === 'guest' && v.status !== 'unverified' && (
-            <button className="btn btn-small" disabled={action.busy} onClick={() => action.run(() => api.resetParticipant(mtgId, p.id))}>重設驗證</button>
-          )}
-          {fakeRecall && !p.leftAt && p.kind !== 'bot' && (
-            <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => action.run(() => api.devLeave(mtgId, p.id))}>模擬離開</button>
-          )}
-        </span>
+        <span className="kind">{kindLabel[p.kind]}{v.returning ? ' · Returning' : ''}{p.leftAt ? ' · Left' : ''}</span>
+        {p.kind === 'guest' && <Flap text={boardWord[v.status]} cells={9} tone={boardTone[v.status]} size="sm" />}
+        {p.kind === 'member' && <Flap text="MEMBER" cells={9} size="sm" />}
       </div>
       <div className="participant-detail">
-        {p.kind === 'member' && <span className="muted">workspace 成員,以 Google 帳號辨識,不需要護照驗證。</span>}
-        {p.kind === 'guest' && v.status === 'unverified' && <span className="muted">還沒有開始驗證。</span>}
-        {p.kind === 'guest' && v.status === 'pending' && <span className="muted">來賓正在用 Self 掃描護照。</span>}
-        {v.failureReason && <span className="fail-reason">原因:{failureLabel[v.failureReason]}</span>}
-        {v.verifiedAt && p.kind === 'guest' && <span className="muted">驗證於 {formatTime(v.verifiedAt)}</span>}
+        {p.kind === 'member' && <span className="muted">Workspace member, recognised by Google account. No passport check needed.</span>}
+        {p.kind === 'bot' && <span className="muted">Shows the QR code and the board as its camera.</span>}
+        {p.kind === 'guest' && v.status === 'unverified' && <span className="muted">Has not started verifying.</span>}
+        {p.kind === 'guest' && v.status === 'pending' && <span className="muted">Scanning their passport in Self now.</span>}
+        {v.failureReason && <span className="fail-reason">{failureLabel[v.failureReason]}</span>}
+        {v.verifiedAt && p.kind === 'guest' && <span className="muted">Verified {formatTime(v.verifiedAt)}</span>}
         <Checks v={v} />
       </div>
+      {(canReset || canLeave) && (
+        <div className="participant-actions">
+          {canReset && (
+            <button className="btn btn-small" disabled={action.busy} onClick={() => action.run(() => api.resetParticipant(mtgId, p.id))}>Reset verification</button>
+          )}
+          {canLeave && (
+            <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => action.run(() => api.devLeave(mtgId, p.id))}>Simulate leaving</button>
+          )}
+        </div>
+      )}
       <FormError message={action.error} />
     </li>
   );
@@ -94,13 +103,13 @@ function DevJoinPanel({ mtgId }: { mtgId: string }) {
   };
   return (
     <section className="card dev-card">
-      <DevTag>模擬:後端沒有接 Recall.ai</DevTag>
-      <h2>模擬參與者加入</h2>
-      <p className="hint">假裝有人進入 Google Meet。填了 workspace 成員的 Email 就會被當成成員,否則是來賓。</p>
+      <DevTag>Simulation: the API is not connected to Recall.ai</DevTag>
+      <h2>Simulate someone joining</h2>
+      <p className="hint">Pretend someone enters the Google Meet call. With a workspace member's email they join as a member, otherwise as a guest.</p>
       <form className="inline-form" onSubmit={submit}>
-        <input required placeholder="顯示名稱" aria-label="顯示名稱" value={displayName} onChange={(e) => setName(e.target.value)} />
-        <input type="email" placeholder="Email(選填)" aria-label="Email(選填)" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <button className="btn" disabled={action.busy}>加入</button>
+        <input required placeholder="Display name" aria-label="Display name" value={displayName} onChange={(e) => setName(e.target.value)} />
+        <input type="email" placeholder="Email (optional)" aria-label="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <button className="btn" disabled={action.busy}>Join</button>
       </form>
       <FormError message={action.error} />
     </section>
@@ -121,7 +130,7 @@ export function MeetingDetailPage() {
     void api.devStatus().then(setDev);
   }, []);
 
-  // 先用 REST 確認會議存在(才能分辨 404),再接 SSE;SSE 的 snapshot 會覆蓋成最新狀態
+  // Confirm the meeting exists over REST first (to tell a 404 apart), then follow SSE; its snapshot replaces the state
   useEffect(() => {
     if (!loaded) return;
     return subscribeHost(mtgId, { onEvent: (e) => setData((prev) => applyEvent(prev, e)), onState: setStream });
@@ -143,40 +152,36 @@ export function MeetingDetailPage() {
 
   return (
     <div className="page">
-      <p className="crumb"><Link to={webRoutes.meetings(workspace.id)}>← 會議列表</Link></p>
+      <p className="crumb"><Link to={webRoutes.meetings(workspace.id)}>All meetings</Link></p>
       <div className="page-head">
         <div>
           <h1>{meeting.title}</h1>
           <p className="muted"><a href={meeting.meetUrl} target="_blank" rel="noreferrer">{meeting.meetUrl}</a></p>
         </div>
-        <div className="head-chips">
-          <Chip tone={meeting.status === 'live' ? 'good' : 'neutral'}>{meetingLabel[meeting.status]}</Chip>
-          <Chip tone={stream === 'open' ? 'good' : 'warn'}>{stream === 'open' ? '即時更新中' : '重新連線中…'}</Chip>
-        </div>
+        <p className="head-state" role="status">
+          <span className={`lamp lamp-${stream === 'open' ? 'ok' : 'now'}`} aria-hidden />
+          {meetingLabel[meeting.status]} · {stream === 'open' ? 'Updating live' : 'Reconnecting…'}
+        </p>
       </div>
 
       <div className="split">
         <div className="stack">
           <section className="card">
             <h2>Bot</h2>
-            <p className="bot-state">
-              <Chip tone={meeting.botStatus === 'in_meeting' ? 'good' : meeting.botStatus === 'error' ? 'bad' : meeting.botStatus === 'idle' || meeting.botStatus === 'left' ? 'neutral' : 'warn'}>
-                {botLabel[meeting.botStatus]}
-              </Chip>
-            </p>
-            {meeting.botStatus === 'waiting_room' && <p className="hint">請在 Google Meet 裡按「允許」讓 bot 進入。</p>}
+            <p className="bot-state"><Flap text={botLabel[meeting.botStatus]} cells={12} tone={botTone[meeting.botStatus]} size="sm" /></p>
+            {meeting.botStatus === 'waiting_room' && <p className="hint">Admit the bot from inside Google Meet to let it in.</p>}
             {botActive ? (
-              <button className="btn" disabled={bot.busy} onClick={() => onBot(() => api.recallBot(meeting.id))}>收回 bot</button>
+              <button className="btn" disabled={bot.busy} onClick={() => onBot(() => api.recallBot(meeting.id))}>Recall bot</button>
             ) : (
-              <button className="btn btn-primary" disabled={bot.busy} onClick={() => onBot(() => api.sendBot(meeting.id))}>派出 bot</button>
+              <button className="btn btn-primary" disabled={bot.busy} onClick={() => onBot(() => api.sendBot(meeting.id))}>Send bot</button>
             )}
             <FormError message={bot.error} />
           </section>
 
           <section className="card">
-            <h2>連結</h2>
-            <CopyField label="來賓驗證頁(bot 畫面上的 QR 也指向這裡)" value={location.origin + webRoutes.join(meeting.joinToken)} />
-            <CopyField label="Bot 畫面頁" value={location.origin + webRoutes.botScreen(meeting.joinToken)} />
+            <h2>Links</h2>
+            <CopyField label="Guest page (the QR on the board points here)" value={location.origin + webRoutes.join(meeting.joinToken)} />
+            <CopyField label="Board (the bot's camera)" value={location.origin + webRoutes.botScreen(meeting.joinToken)} />
           </section>
 
           {dev?.fake.recall && <DevJoinPanel mtgId={meeting.id} />}
@@ -184,16 +189,16 @@ export function MeetingDetailPage() {
 
         <section className="card">
           <div className="card-head">
-            <h2>參與者</h2>
-            <span className="muted">來賓已驗證 {verified} / {guests.length}</span>
+            <h2>In the call</h2>
+            <span className="tally">{verified} / {guests.length} guests verified</span>
           </div>
-          {present.length === 0 && <Empty>目前沒有人在會議中。派出 bot 後,參與者會即時出現在這裡。</Empty>}
+          {present.length === 0 && <Empty>Nobody is in the call yet. Send the bot and participants appear here as they join.</Empty>}
           <ul className="participants">
             {present.map((p) => <ParticipantRow key={p.id} p={p} mtgId={meeting.id} fakeRecall={!!dev?.fake.recall} />)}
           </ul>
           {left.length > 0 && (
             <>
-              <h3>已離開</h3>
+              <h3>Left the call</h3>
               <ul className="participants">
                 {left.map((p) => <ParticipantRow key={p.id} p={p} mtgId={meeting.id} fakeRecall={false} />)}
               </ul>

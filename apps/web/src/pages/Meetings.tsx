@@ -35,51 +35,51 @@ export function MeetingsPage() {
 
   return (
     <div className="page">
-      <h1>會議</h1>
+      <h1>Meetings</h1>
       <div className="split">
         <section className="card">
-          <h2>建立會議</h2>
+          <h2>Create meeting</h2>
           {policies.error && <ErrorBox message={policies.error} onRetry={policies.reload} />}
           {policies.data && policies.data.items.length === 0 ? (
             <Empty>
-              還沒有驗證政策。請先到 <Link to={webRoutes.policies(workspace.id)}>驗證政策</Link> 建立一個。
+              There are no policies yet. Create one on the <Link to={webRoutes.policies(workspace.id)}>Policies</Link> page first.
             </Empty>
           ) : (
             <form onSubmit={create}>
               <label className="field">
-                <span className="field-label">會議名稱</span>
-                <input required value={title} placeholder="例:合作夥伴季度會議" onChange={(e) => setTitle(e.target.value)} />
+                <span className="field-label">Meeting title</span>
+                <input required value={title} placeholder="e.g. Partner quarterly review" onChange={(e) => setTitle(e.target.value)} />
               </label>
               <label className="field">
-                <span className="field-label">Google Meet 連結</span>
+                <span className="field-label">Google Meet link</span>
                 <input required type="url" value={meetUrl} placeholder="https://meet.google.com/abc-defg-hij" onChange={(e) => setMeetUrl(e.target.value)} />
               </label>
               <label className="field">
-                <span className="field-label">驗證政策</span>
+                <span className="field-label">Policy</span>
                 <select required value={policyId} onChange={(e) => setPolicyId(e.target.value)}>
                   {policies.data?.items.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}{p.isDefault ? '(預設)' : ''}</option>
+                    <option key={p.id} value={p.id}>{p.name}{p.isDefault ? ' (default)' : ''}</option>
                   ))}
                 </select>
               </label>
               <FormError message={action.error} />
-              <button className="btn btn-primary" disabled={action.busy || !policyId}>{action.busy ? '建立中…' : '建立會議'}</button>
+              <button className="btn btn-primary" disabled={action.busy || !policyId}>{action.busy ? 'Creating…' : 'Create meeting'}</button>
             </form>
           )}
         </section>
 
         <section className="card">
-          <h2>會議列表</h2>
+          <h2>Meeting list</h2>
           {meetings.loading && !meetings.data && <Loading />}
           {meetings.error && <ErrorBox message={meetings.error} onRetry={meetings.reload} />}
-          {meetings.data && sorted.length === 0 && <Empty>還沒有會議。從左邊建立第一場。</Empty>}
+          {meetings.data && sorted.length === 0 && <Empty>No meetings yet. Create your first one using the form on the left.</Empty>}
           <ul className="rows">
             {sorted.map((m) => (
               <li key={m.id}>
                 <Link className="row-link" to={webRoutes.meeting(workspace.id, m.id)}>
                   <span className="row-main">
                     <strong>{m.title}</strong>
-                    <span className="muted">{policyName(m.policyId)} · 建立於 {formatTime(m.createdAt)}</span>
+                    <span className="muted">{policyName(m.policyId)} · Created {formatTime(m.createdAt)}</span>
                   </span>
                   <span className="row-side">
                     <Chip tone={m.status === 'live' ? 'good' : 'neutral'}>{meetingLabel[m.status]}</Chip>

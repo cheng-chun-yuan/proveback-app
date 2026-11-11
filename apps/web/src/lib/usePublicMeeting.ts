@@ -21,7 +21,7 @@ function applyEvent(prev: PublicMeeting, e: PublicEvent): PublicMeeting {
   }
 }
 
-/** 公開頁共用:先用 REST 載入(才能分辨連結無效),再用公開頻道即時更新 */
+/** Shared by the public pages: load over REST first (to tell a bad link apart), then follow the public channel. */
 export function usePublicMeeting(joinToken: string) {
   const meeting = useLoad(() => api.publicMeeting(joinToken), [joinToken]);
   const [stream, setStream] = useState<StreamState>('connecting');

@@ -1,4 +1,4 @@
-// 把 mock store 掛到契約定義的 REST 路徑上
+// Attach the mock store to the REST paths defined by the contract
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import {
   API_BASE, AddMemberBody, CreateMeetingBody, CreatePolicyBody, CreateSessionBody, CreateWorkspaceBody,
@@ -16,7 +16,7 @@ function route<S extends z.ZodTypeAny>(method: Method, key: PathKey, schema: S |
       let body: unknown;
       if (schema) {
         const parsed = schema.safeParse(await request.json().catch(() => null));
-        if (!parsed.success) throw new MockError('validation_failed', '請求內容不符合格式', 400);
+        if (!parsed.success) throw new MockError('validation_failed', 'The request body is not in the expected format', 400);
         body = parsed.data;
       }
       const out = fn(params as Params, body as z.infer<S>);

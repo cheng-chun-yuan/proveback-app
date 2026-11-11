@@ -9,7 +9,7 @@ export interface Loaded<T> {
   setData: (updater: (prev: T) => T) => void;
 }
 
-/** 載入一筆資料。deps 改變時重新載入,過期的回應會被丟掉 */
+/** Load one resource. Reloads when deps change; stale responses are dropped. */
 export function useLoad<T>(fn: () => Promise<T>, deps: unknown[]): Loaded<T> {
   const [data, setDataRaw] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[]): Loaded<T> {
   return { data, error, loading, reload, setData };
 }
 
-/** 包住一個會改資料的動作:處理進行中狀態與錯誤訊息 */
+/** Wrap a mutating action: tracks the busy state and the error message. */
 export function useAction() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

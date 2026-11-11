@@ -2,44 +2,66 @@ import type { BotStatus, FailureReason, MeetingStatus, ParticipantKind, Role, Ve
 import type { z } from 'zod';
 
 export const verificationLabel: Record<VerificationStatus, string> = {
-  unverified: '未驗證',
-  pending: '驗證中',
-  verified: '已驗證',
-  failed: '未通過',
+  unverified: 'Waiting',
+  pending: 'Scanning',
+  verified: 'Verified',
+  failed: 'Not verified',
+};
+
+/** Words and tones for the split-flap status cells. At most 9 characters each. */
+export const boardWord: Record<VerificationStatus, string> = {
+  unverified: 'WAITING',
+  pending: 'SCANNING',
+  verified: 'VERIFIED',
+  failed: 'TRY AGAIN',
+};
+export const boardTone: Record<VerificationStatus, 'dim' | 'now' | 'ok' | 'bad'> = {
+  unverified: 'dim',
+  pending: 'now',
+  verified: 'ok',
+  failed: 'bad',
 };
 
 export const failureLabel: Record<FailureReason, string> = {
-  ofac: '護照持有人在制裁名單上',
-  excluded_country: '國籍在這場會議的排除名單內',
-  name_mismatch: '護照姓名與會議中的顯示名稱不符',
-  underage: '未達這場會議要求的年齡',
-  expired: '驗證逾時,沒有在時限內完成',
-  proof_invalid: '護照證明無效',
-  already_bound: '這本護照已經在這場會議綁定另一位參與者',
+  ofac: 'The passport holder is on a sanctions list.',
+  excluded_country: "The passport's nationality is on this meeting's excluded list.",
+  name_mismatch: 'The name on the passport does not match the display name in the meeting.',
+  underage: 'The passport holder is below the age this meeting requires.',
+  expired: 'The verification was not finished in time.',
+  proof_invalid: 'The passport proof could not be validated.',
+  already_bound: 'This passport is already linked to another participant in this meeting.',
 };
 
 export const botLabel: Record<z.infer<typeof BotStatus>, string> = {
-  idle: '尚未派出',
-  joining: '加入中',
-  waiting_room: '等待主辦方在 Meet 內允許',
-  in_meeting: '已在會議中',
-  left: '已離開',
-  error: '發生錯誤',
+  idle: 'NOT SENT',
+  joining: 'JOINING',
+  waiting_room: 'WAITING ROOM',
+  in_meeting: 'IN MEETING',
+  left: 'LEFT',
+  error: 'ERROR',
+};
+export const botTone: Record<z.infer<typeof BotStatus>, 'dim' | 'now' | 'ok' | 'bad'> = {
+  idle: 'dim',
+  joining: 'now',
+  waiting_room: 'now',
+  in_meeting: 'ok',
+  left: 'dim',
+  error: 'bad',
 };
 
 export const meetingLabel: Record<z.infer<typeof MeetingStatus>, string> = {
-  scheduled: '未開始',
-  live: '進行中',
-  ended: '已結束',
+  scheduled: 'Not started',
+  live: 'Live',
+  ended: 'Ended',
 };
 
-export const kindLabel: Record<z.infer<typeof ParticipantKind>, string> = { member: '成員', guest: '來賓', bot: 'Bot' };
-export const roleLabel: Record<Role, string> = { owner: '擁有者', admin: '管理員', member: '成員' };
+export const kindLabel: Record<z.infer<typeof ParticipantKind>, string> = { member: 'Member', guest: 'Guest', bot: 'Bot' };
+export const roleLabel: Record<Role, string> = { owner: 'Owner', admin: 'Admin', member: 'Member' };
 
 export const formatTime = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
-/** 把 "prk, irn RUS" 解析成 alpha-3 代碼;回傳不合法的項目讓表單提示 */
+/** Parse "prk, irn RUS" into alpha-3 codes; invalid items are returned so the form can point at them. */
 export function parseCountries(text: string): { codes: string[]; invalid: string[] } {
   const items = text.toUpperCase().split(/[\s,、,]+/).filter(Boolean);
   const codes = [...new Set(items.filter((c) => /^[A-Z]{3}$/.test(c)))];

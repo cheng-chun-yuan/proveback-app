@@ -2,10 +2,15 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/500.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
 import './styles.css';
 
 async function boot() {
-  // mock 模式:先啟動 MSW,確保第一個請求就被攔截
+  // Mock mode: start MSW first so the very first request is intercepted
   if (import.meta.env.VITE_MOCK === '1') await (await import('./mock/browser')).startMock();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

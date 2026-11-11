@@ -14,7 +14,7 @@ const Ctx = createContext<WorkspaceCtx | null>(null);
 
 export function useWorkspace(): WorkspaceCtx {
   const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('useWorkspace 只能在 WorkspaceLayout 內使用');
+  if (!ctx) throw new Error('useWorkspace must be used inside WorkspaceLayout');
   return ctx;
 }
 
@@ -39,26 +39,26 @@ export function WorkspaceLayout() {
           <span className="brand">ProveBack</span>
           <select
             className="ws-switch"
-            aria-label="切換 workspace"
+            aria-label="Switch workspace"
             value={workspace?.id ?? ''}
             onChange={(e) => navigate(webRoutes.meetings(e.target.value))}
           >
-            {!workspace && <option value="">選擇 workspace</option>}
+            {!workspace && <option value="">Choose a workspace</option>}
             {me.data.workspaces.map((w) => (
-              <option key={w.id} value={w.id}>{w.name}{w.type === 'personal' ? '(個人)' : ''}</option>
+              <option key={w.id} value={w.id}>{w.name}{w.type === 'personal' ? ' (personal)' : ''}</option>
             ))}
           </select>
           <span className="topbar-user">
             <span className="user-email">{me.data.user.email}</span>
-            <button className="btn btn-small btn-ghost" onClick={logout}>登出</button>
+            <button className="btn btn-small btn-ghost" onClick={logout}>Sign out</button>
           </span>
         </div>
         {workspace && (
-          <nav className="tabs" aria-label="主要導覽">
-            <NavLink to={webRoutes.meetings(workspace.id)}>會議</NavLink>
-            <NavLink to={webRoutes.policies(workspace.id)}>驗證政策</NavLink>
-            <NavLink to={webRoutes.members(workspace.id)}>成員</NavLink>
-            <NavLink to={webRoutes.guests(workspace.id)}>來賓名冊</NavLink>
+          <nav className="tabs" aria-label="Main">
+            <NavLink to={webRoutes.meetings(workspace.id)}>Meetings</NavLink>
+            <NavLink to={webRoutes.policies(workspace.id)}>Policies</NavLink>
+            <NavLink to={webRoutes.members(workspace.id)}>Members</NavLink>
+            <NavLink to={webRoutes.guests(workspace.id)}>Guests</NavLink>
           </nav>
         )}
       </header>
@@ -68,7 +68,7 @@ export function WorkspaceLayout() {
             <Outlet />
           </Ctx.Provider>
         ) : (
-          <ErrorBox message="找不到這個 workspace,或你不是它的成員。請從上方切換。" />
+          <ErrorBox message="This workspace does not exist, or you are not a member of it. Switch workspaces above." />
         )}
       </main>
     </div>

@@ -20,7 +20,7 @@ function Home() {
   if (me.error) return <div className="center-page"><ErrorBox message={me.error} onRetry={me.reload} /></div>;
   const first = me.data?.workspaces[0];
   if (!me.data) return <div className="center-page"><Loading /></div>;
-  if (!first) return <div className="center-page"><ErrorBox message="這個帳號還沒有任何 workspace。" /></div>;
+  if (!first) return <div className="center-page"><ErrorBox message="This account does not have a workspace yet." /></div>;
   return <Navigate to={webRoutes.meetings(first.id)} replace />;
 }
 
@@ -29,14 +29,14 @@ export function App() {
     <>
       {import.meta.env.VITE_MOCK === '1' && (
         <div className="mock-ribbon">
-          Mock 模式:資料是假的,只存在這個瀏覽器。
+          Mock mode: the data is fake and stored only in this browser.
           <button
             onClick={async () => {
               (await import('./mock/store')).resetMock();
               location.assign('/');
             }}
           >
-            重設資料
+            Reset data
           </button>
         </div>
       )}
@@ -55,7 +55,7 @@ export function App() {
         <Route path="/bot-screen/:joinToken" element={<BotScreenPage />} />
         <Route path={webRoutes.devLogin} element={<DevLoginPage />} />
         <Route path="/dev/self/:sessionId" element={<DevSelfPage />} />
-        <Route path="*" element={<div className="center-page"><ErrorBox message="找不到這個頁面。" /></div>} />
+        <Route path="*" element={<div className="center-page"><ErrorBox message="Page not found." /></div>} />
       </Routes>
     </>
   );

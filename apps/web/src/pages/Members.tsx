@@ -39,67 +39,67 @@ export function MembersPage() {
 
   return (
     <div className="page">
-      <h1>成員</h1>
+      <h1>Members</h1>
       <p className="lead">
         {workspace.name}
-        {workspace.domain ? `(${workspace.domain})` : ''}的成員以 Google 帳號辨識,進會議時不需要護照驗證。
+        Members{workspace.domain ? ` (${workspace.domain})` : ''} are identified by their Google account and do not need passport verification to join a meeting.
       </p>
       <div className="split">
         <div className="stack">
           <section className="card">
-            <h2>邀請成員</h2>
+            <h2>Invite member</h2>
             <form onSubmit={submitInvite}>
               <label className="field">
                 <span className="field-label">Email</span>
                 <input required type="email" value={email} placeholder="name@example.com" onChange={(e) => setEmail(e.target.value)} />
               </label>
               <label className="field">
-                <span className="field-label">角色</span>
+                <span className="field-label">Role</span>
                 <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
                   {ROLES.map((r) => <option key={r} value={r}>{roleLabel[r]}</option>)}
                 </select>
               </label>
               <FormError message={invite.error} />
-              <button className="btn btn-primary" disabled={invite.busy}>{invite.busy ? '邀請中…' : '邀請'}</button>
+              <button className="btn btn-primary" disabled={invite.busy}>{invite.busy ? 'Inviting…' : 'Invite member'}</button>
             </form>
           </section>
 
           <section className="card">
-            <h2>建立公司 workspace</h2>
-            <p className="hint">公司 workspace 可以設定網域,方便之後管理同公司的成員。</p>
+            <h2>Create company workspace</h2>
+            <p className="hint">A company workspace can have a domain, which makes it easier to manage members from the same company.</p>
             <form onSubmit={submitWorkspace}>
               <label className="field">
-                <span className="field-label">名稱</span>
-                <input required value={wsName} placeholder="例:ACME" onChange={(e) => setWsName(e.target.value)} />
+                <span className="field-label">Name</span>
+                <input required value={wsName} placeholder="e.g. ACME" onChange={(e) => setWsName(e.target.value)} />
               </label>
               <label className="field">
-                <span className="field-label">網域(選填)</span>
+                <span className="field-label">Domain (optional)</span>
                 <input value={domain} placeholder="acme.com" pattern="[A-Za-z0-9.\-]+\.[A-Za-z]{2,}" onChange={(e) => setDomain(e.target.value)} />
               </label>
               <FormError message={create.error} />
-              <button className="btn" disabled={create.busy}>{create.busy ? '建立中…' : '建立'}</button>
+              <button className="btn" disabled={create.busy}>{create.busy ? 'Creating…' : 'Create workspace'}</button>
             </form>
           </section>
         </div>
 
         <section className="card">
-          <h2>成員列表</h2>
+          <h2>Member list</h2>
           {members.loading && !members.data && <Loading />}
           {members.error && <ErrorBox message={members.error} onRetry={members.reload} />}
-          {members.data?.items.length === 0 && <Empty>還沒有成員。</Empty>}
+          {members.data?.items.length === 0 && <Empty>No members yet.</Empty>}
           <FormError message={change.error} />
           <ul className="rows">
             {members.data?.items.map((m) => (
               <li key={m.userId} className="row-block">
                 <div className="row-main">
                   <strong>
-                    {m.name} {m.userId === me.user.id && <Chip>你</Chip>} {m.status === 'invited' && <Chip tone="warn">已邀請,尚未登入</Chip>}
+                    {m.name} {m.userId === me.user.id && <Chip>You</Chip>} {m.status === 'invited' && <Chip tone="warn">Invited, not signed in yet</Chip>}
                   </strong>
                   <span className="muted">{m.email}</span>
                 </div>
                 <div className="actions">
                   <select
-                    aria-label={`${m.email} 的角色`}
+                    aria-label={`Role for ${m.email}`}
                     value={m.role}
                     disabled={change.busy}
                     onChange={(e) => change.run(async () => { await api.updateMember(workspace.id, m.userId, { role: e.target.value as Role }); members.reload(); })}
@@ -109,9 +109,9 @@ export function MembersPage() {
                   <button
                     className="btn btn-small btn-danger"
                     disabled={change.busy}
-                    onClick={() => confirm(`確定把 ${m.email} 移出 workspace?`) && change.run(async () => { await api.removeMember(workspace.id, m.userId); members.reload(); })}
+                    onClick={() => confirm(`Remove ${m.email} from this workspace?`) && change.run(async () => { await api.removeMember(workspace.id, m.userId); members.reload(); })}
                   >
-                    移除
+                    Remove
                   </button>
                 </div>
               </li>

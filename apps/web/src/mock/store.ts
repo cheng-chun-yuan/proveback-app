@@ -1,5 +1,5 @@
-// Mock 模式的後端替身:記憶體內的狀態,行為比照後端的假資料模式。
-// 只在 VITE_MOCK=1 時載入,不會進正式 bundle 的主要路徑。
+// Stand-in for the backend in mock mode: in-memory state that behaves like the backend's fake-data mode.
+// Loaded only when VITE_MOCK=1, so it stays off the main path of the production bundle.
 import {
   type AddMemberBody, type Checks, type CreateMeetingBody, type CreatePolicyBody, type CreateWorkspaceBody,
   type DevCompleteSessionBody, type DevJoinBody, type DevLoginBody, type DevStatus, type ErrorCode, type FailureReason,
@@ -18,7 +18,7 @@ export class MockError extends Error {
     super(message);
   }
 }
-const notFound = (what: string) => new MockError('not_found', `找不到${what}`, 404);
+const notFound = (what: string) => new MockError('not_found', `${what} not found`, 404);
 const conflict = (msg: string) => new MockError('conflict', msg, 409);
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -39,7 +39,7 @@ const db = {
   policies: [
     ...clone(mockPolicies),
     {
-      id: 'pol_personal', workspaceId: 'ws_alice', name: '預設政策', isDefault: true, requireOfacClear: true,
+      id: 'pol_personal', workspaceId: 'ws_alice', name: 'Default policy', isDefault: true, requireOfacClear: true,
       excludedCountries: [], discloseNationality: true, nameMatch: 'warn', minimumAge: null,
     },
   ] as Policy[],
@@ -47,14 +47,14 @@ const db = {
   participants: clone(mockParticipants) as Participant[],
   guests: clone(mockGuests) as Guest[],
   sessions: new Map<string, VerifySession>(),
-  // 模擬 UNIQUE (workspace_id, nullifier_hash) 與 UNIQUE (meeting_id, guest_id)
+  // Simulates UNIQUE (workspace_id, nullifier_hash) and UNIQUE (meeting_id, guest_id)
   passports: new Map<string, string>([['ws_acme:P-KEN', 'gst_ken']]),
   bindings: new Map<string, string>([['mtg_demo:gst_ken', 'par_ken']]),
 };
 
-// ---------- 跨分頁共用 ----------
-// 主辦方頁、來賓頁、模擬 Self 頁通常開在不同分頁,所以狀態存在 localStorage,
-// 每次呼叫前重新讀取、呼叫後寫回;事件用 BroadcastChannel 轉給其他分頁。
+// ---------- Shared across tabs ----------
+// The host page, guest page and simulated Self page are usually open in different tabs, so state lives in localStorage,
+// is re-read before every call and written back after; events are relayed to other tabs through BroadcastChannel.
 const DB_KEY = 'pb-mock-db-v1';
 const channel = inBrowser && typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('pb-mock') : null;
 
@@ -63,7 +63,7 @@ function persist() {
   try {
     localStorage.setItem(DB_KEY, JSON.stringify({ ...db, sessions: [...db.sessions], passports: [...db.passports], bindings: [...db.bindings] }));
   } catch {
-    /* 存不進去就只留在這個分頁 */
+    /* If it cannot be saved, state stays in this tab only */
   }
 }
 function load() {
@@ -78,17 +78,17 @@ function load() {
       bindings: new Map(saved.bindings as [string, string][]),
     });
   } catch {
-    /* 忽略壞掉的暫存 */
+    /* Ignore corrupted stored data */
   }
 }
 load();
 
-/** 清掉 mock 資料,回到初始狀態 */
+/** Clear mock data and return to the initial state */
 export function resetMock() {
   if (inBrowser) localStorage.removeItem(DB_KEY);
 }
 
-// ---------- 事件 ----------
+// ---------- Events ----------
 const hostSubs = new Map<string, Set<(e: HostEvent) => void>>();
 const publicSubs = new Map<string, Set<(e: PublicEvent) => void>>();
 
@@ -130,7 +130,7 @@ function subscribe<E>(subs: Map<string, Set<(e: E) => void>>, key: string, cb: (
   const set = subs.get(key) ?? new Set();
   subs.set(key, set);
   set.add(cb);
-  // 比照後端:連線後第一筆是 snapshot
+  // Same as the backend: the first event after connecting is a snapshot
   setTimeout(() => {
     if (!set.has(cb)) return;
     load();
@@ -155,37 +155,37 @@ export function subscribePublic(joinToken: string, cb: (e: PublicEvent) => void)
   });
 }
 
-// ---------- 查找 ----------
+// ---------- Lookups ----------
 function me(): User {
-  if (!db.user) throw new MockError('unauthenticated', '尚未登入', 401);
+  if (!db.user) throw new MockError('unauthenticated', 'You are not signed in. Sign in and try again.', 401);
   return db.user;
 }
 function workspace(wsId: string): Workspace {
   const u = me();
   const ws = db.workspaces.find((w) => w.id === wsId);
   if (!ws) throw notFound(' workspace');
-  if (!db.members.some((m) => m.workspaceId === wsId && m.userId === u.id)) throw new MockError('forbidden', '你不是這個 workspace 的成員', 403);
+  if (!db.members.some((m) => m.workspaceId === wsId && m.userId === u.id)) throw new MockError('forbidden', 'You are not a member of this workspace', 403);
   return ws;
 }
 function meeting(mtgId: string): Meeting {
   const m = db.meetings.find((x) => x.id === mtgId);
-  if (!m) throw notFound('會議');
+  if (!m) throw notFound('Meeting');
   workspace(m.workspaceId);
   return m;
 }
 function meetingByToken(joinToken: string): Meeting {
   const m = db.meetings.find((x) => x.joinToken === joinToken);
-  if (!m) throw notFound('會議,連結可能無效或已過期');
+  if (!m) throw notFound('Meeting (the link may be invalid or expired)');
   return m;
 }
 function policyOf(m: Meeting): Policy {
   const p = db.policies.find((x) => x.id === m.policyId);
-  if (!p) throw notFound('驗證政策');
+  if (!p) throw notFound('Policy');
   return p;
 }
 function participant(m: Meeting, pid: string): Participant {
   const p = db.participants.find((x) => x.id === pid && x.meetingId === m.id);
-  if (!p) throw notFound('參與者');
+  if (!p) throw notFound('Participant');
   return p;
 }
 const detail = (m: Meeting): MeetingDetail => ({ meeting: m, participants: db.participants.filter((p) => p.meetingId === m.id) });
@@ -210,12 +210,12 @@ function expireSessions(pid: string) {
   for (const s of db.sessions.values()) if (s.participantId === pid && s.status === 'pending') s.status = 'expired';
 }
 
-// ---------- 端點 ----------
+// ---------- Endpoints ----------
 const impl = {
   devStatus: (): DevStatus => ({ fake: { google: true, recall: true, self: true } }),
 
   devLogin(body: DevLoginBody): void {
-    // mock 模式只有一位使用者:沿用固定 ID,讓既有的 workspace 成員關係成立
+    // Mock mode has a single user: reuse a fixed ID so existing workspace memberships stay valid
     db.user = { ...mockUser, email: body.email, name: body.name };
     for (const m of db.members) if (m.userId === mockUser.id) Object.assign(m, { email: body.email, name: body.name });
   },
@@ -234,7 +234,7 @@ const impl = {
     db.workspaces.push(ws);
     db.members.push({ userId: u.id, workspaceId: ws.id, email: u.email, name: u.name, role: 'owner', status: 'active' });
     db.policies.push({
-      id: rid('pol'), workspaceId: ws.id, name: '預設政策', isDefault: true, requireOfacClear: true,
+      id: rid('pol'), workspaceId: ws.id, name: 'Default policy', isDefault: true, requireOfacClear: true,
       excludedCountries: [], discloseNationality: true, nameMatch: 'warn', minimumAge: null,
     });
     return ws;
@@ -244,7 +244,7 @@ const impl = {
   members: (wsId: string) => ({ items: db.members.filter((m) => m.workspaceId === workspace(wsId).id) }),
   addMember(wsId: string, body: AddMemberBody): Member {
     workspace(wsId);
-    if (db.members.some((m) => m.workspaceId === wsId && m.email === body.email)) throw conflict('這個 Email 已經在成員名單裡');
+    if (db.members.some((m) => m.workspaceId === wsId && m.email === body.email)) throw conflict('This email address is already a member of the workspace');
     const member: Member = { userId: rid('usr'), workspaceId: wsId, email: body.email, name: body.email, role: body.role, status: 'invited' };
     db.members.push(member);
     return member;
@@ -252,9 +252,9 @@ const impl = {
   updateMember(wsId: string, userId: string, role: Member['role']): Member {
     workspace(wsId);
     const m = db.members.find((x) => x.workspaceId === wsId && x.userId === userId);
-    if (!m) throw notFound('成員');
+    if (!m) throw notFound('Member');
     if (m.role === 'owner' && role !== 'owner' && !db.members.some((x) => x.workspaceId === wsId && x.role === 'owner' && x !== m)) {
-      throw conflict('workspace 至少要有一位擁有者');
+      throw conflict('A workspace must have at least one owner');
     }
     m.role = role;
     return m;
@@ -262,9 +262,9 @@ const impl = {
   removeMember(wsId: string, userId: string): void {
     workspace(wsId);
     const m = db.members.find((x) => x.workspaceId === wsId && x.userId === userId);
-    if (!m) throw notFound('成員');
+    if (!m) throw notFound('Member');
     if (m.role === 'owner' && !db.members.some((x) => x.workspaceId === wsId && x.role === 'owner' && x !== m)) {
-      throw conflict('不能移除唯一的擁有者');
+      throw conflict('You cannot remove the only owner');
     }
     db.members = db.members.filter((x) => x !== m);
   },
@@ -279,7 +279,7 @@ const impl = {
   },
   updatePolicy(policyId: string, body: UpdatePolicyBody): Policy {
     const p = db.policies.find((x) => x.id === policyId);
-    if (!p) throw notFound('驗證政策');
+    if (!p) throw notFound('Policy');
     workspace(p.workspaceId);
     if (body.isDefault) for (const o of db.policies) if (o.workspaceId === p.workspaceId) o.isDefault = false;
     Object.assign(p, body);
@@ -287,16 +287,16 @@ const impl = {
   },
   deletePolicy(policyId: string): void {
     const p = db.policies.find((x) => x.id === policyId);
-    if (!p) throw notFound('驗證政策');
+    if (!p) throw notFound('Policy');
     workspace(p.workspaceId);
-    if (db.meetings.some((m) => m.policyId === policyId)) throw conflict('還有會議在使用這個政策,無法刪除');
+    if (db.meetings.some((m) => m.policyId === policyId)) throw conflict('This policy is used by existing meetings and cannot be deleted. Change those meetings first');
     db.policies = db.policies.filter((x) => x !== p);
   },
 
   meetings: (wsId: string) => ({ items: db.meetings.filter((m) => m.workspaceId === workspace(wsId).id) }),
   createMeeting(wsId: string, body: CreateMeetingBody): Meeting {
     workspace(wsId);
-    if (!db.policies.some((p) => p.id === body.policyId && p.workspaceId === wsId)) throw notFound('驗證政策');
+    if (!db.policies.some((p) => p.id === body.policyId && p.workspaceId === wsId)) throw notFound('Policy');
     const m: Meeting = {
       id: rid('mtg'), workspaceId: wsId, title: body.title, meetUrl: body.meetUrl, policyId: body.policyId,
       createdBy: me().id, createdAt: now(), status: 'scheduled', botStatus: 'idle', joinToken: rid('jt'),
@@ -308,11 +308,11 @@ const impl = {
 
   sendBot(mtgId: string): Meeting {
     const m = meeting(mtgId);
-    if (['joining', 'waiting_room', 'in_meeting'].includes(m.botStatus)) throw conflict('bot 已經派出');
+    if (['joining', 'waiting_room', 'in_meeting'].includes(m.botStatus)) throw conflict('The bot has already been sent');
     m.botStatus = 'joining';
     emitMeeting(m);
     setTimeout(() => {
-      // 其他分頁可能已經改過資料,重新讀取後再找一次這場會議
+      // Another tab may have changed the data; re-read it and look up this meeting again
       load();
       const cur = db.meetings.find((x) => x.id === mtgId);
       if (!cur || cur.botStatus !== 'joining') return;
@@ -342,7 +342,7 @@ const impl = {
   resetParticipant(mtgId: string, pid: string): Participant {
     const m = meeting(mtgId);
     const p = participant(m, pid);
-    if (p.kind !== 'guest') throw conflict('只有來賓需要驗證');
+    if (p.kind !== 'guest') throw conflict('Only guests need to be verified');
     if (p.verification.guestId) db.bindings.delete(`${m.id}:${p.verification.guestId}`);
     expireSessions(p.id);
     p.verification = UNVERIFIED;
@@ -353,10 +353,10 @@ const impl = {
   guests: (wsId: string) => ({ items: db.guests.filter((g) => g.workspaceId === workspace(wsId).id) }),
   revokeGuest(guestId: string): void {
     const g = db.guests.find((x) => x.id === guestId);
-    if (!g) throw notFound('來賓');
+    if (!g) throw notFound('Guest');
     workspace(g.workspaceId);
     g.revoked = true;
-    // 撤銷後同一本護照再出現視為新來賓
+    // After revoking, the same passport appearing again counts as a new guest
     for (const [k, v] of db.passports) if (v === guestId) db.passports.delete(k);
   },
 
@@ -379,15 +379,15 @@ const impl = {
     emitLeft(m, p);
   },
 
-  // ---------- 公開端點 ----------
+  // ---------- Public endpoints ----------
   publicMeeting: (joinToken: string) => publicView(meetingByToken(joinToken)),
 
   createSession(joinToken: string, participantId: string): VerifySession {
     const m = meetingByToken(joinToken);
     const p = participant(m, participantId);
-    if (p.kind !== 'guest' || p.leftAt) throw new MockError('validation_failed', '這位參與者不需要或無法驗證', 400);
-    if (p.verification.status === 'verified') throw conflict('這位參與者已經驗證過了');
-    expireSessions(p.id); // 一個參與者同時只有一個有效 session
+    if (p.kind !== 'guest' || p.leftAt) throw new MockError('validation_failed', 'This participant does not need verification or cannot be verified', 400);
+    if (p.verification.status === 'verified') throw conflict('This participant is already verified');
+    expireSessions(p.id); // A participant has only one active session at a time
     const s: VerifySession = {
       id: rid('vs'), participantId: p.id, expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(), status: 'pending',
       failureReason: null, selfApp: null, universalLink: origin + webRoutes.devSelf(''),
@@ -401,7 +401,7 @@ const impl = {
 
   publicSession(sessionId: string): VerifySession {
     const s = db.sessions.get(sessionId);
-    if (!s) throw notFound('驗證 session');
+    if (!s) throw notFound('Verification session');
     if (s.status === 'pending' && Date.parse(s.expiresAt) < Date.now()) {
       s.status = 'expired';
       s.failureReason = 'expired';
@@ -417,11 +417,11 @@ const impl = {
 
   devCompleteSession(sessionId: string, proof: DevCompleteSessionBody): VerifySession {
     const s = impl.publicSession(sessionId);
-    if (s.status === 'expired') throw new MockError('expired', '這個驗證連結已經過期', 410);
-    if (s.status !== 'pending') throw conflict('這個驗證已經完成');
+    if (s.status === 'expired') throw new MockError('expired', 'This verification link has expired. Ask for a new one', 410);
+    if (s.status !== 'pending') throw conflict('This verification is already complete');
     const p = db.participants.find((x) => x.id === s.participantId);
     const m = p && db.meetings.find((x) => x.id === p.meetingId);
-    if (!p || !m) throw notFound('參與者');
+    if (!p || !m) throw notFound('Participant');
     const pol = policyOf(m);
 
     const score = pol.nameMatch === 'off' ? null : nameScore(proof.name, p.displayName);
@@ -480,7 +480,7 @@ const impl = {
   },
 };
 
-// 每次呼叫前先讀回其他分頁的變更,呼叫後(包含丟錯時,例如 session 逾時)寫回
+// Before each call, read back changes from other tabs; after it (including when it throws, e.g. session timeout), write back
 export const mockApi = new Proxy(impl, {
   get(target, key, receiver) {
     const fn = Reflect.get(target, key, receiver) as unknown;
@@ -496,7 +496,7 @@ export const mockApi = new Proxy(impl, {
   },
 });
 
-/** 姓名比對:去變音符號、轉大寫、拆成字詞後算交集比例(與字詞順序無關) */
+/** Name match: strip diacritics, uppercase, split into words, then compute the overlap ratio (word order does not matter) */
 function nameScore(a: string, b: string): number {
   const tokens = (s: string) =>
     new Set(s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^\p{L}]+/gu, ' ').trim().split(' ').filter(Boolean));

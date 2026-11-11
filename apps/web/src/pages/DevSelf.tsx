@@ -34,44 +34,44 @@ export function DevSelfPage() {
   return (
     <div className="center-page">
       <div className="card card-narrow">
-        <DevTag>模擬畫面:這不是真的 Self app</DevTag>
-        <h1>模擬掃描護照</h1>
+        <DevTag>Simulation: this is not the real Self app</DevTag>
+        <h1>Simulated Self app</h1>
         {session.loading && <Loading />}
         {session.error && <ErrorBox message={session.error} onRetry={session.reload} />}
         {done && (
           <div className={`result ${done.status === 'verified' ? 'result-good' : 'result-bad'}`}>
-            <strong>{done.status === 'verified' ? '證明已送出,驗證通過' : done.status === 'expired' ? '這個驗證連結已過期' : '證明已送出,驗證未通過'}</strong>
+            <strong>{done.status === 'verified' ? 'Proof submitted. Verified' : done.status === 'expired' ? 'This verification link has expired' : 'Proof submitted. Not verified'}</strong>
             {done.failureReason && <span>{failureLabel[done.failureReason]}</span>}
-            <span className="hint">可以關閉這個分頁,回到原本的驗證頁查看結果。</span>
+            <span className="hint">You can close this tab and return to the verification page to see the result.</span>
           </div>
         )}
         {session.data && !done && (
           <form onSubmit={submit}>
-            <p className="hint">後端沒有設定 Self,所以用這個表單假裝送出一份護照證明。護照編號相同代表同一本護照。</p>
+            <p className="hint">Self is not configured on the backend, so this form simulates submitting a passport proof. The same passport number means the same passport.</p>
             <label className="field">
-              <span className="field-label">護照編號(只用來辨識是不是同一本)</span>
+              <span className="field-label">Passport number (only used to tell whether it is the same passport)</span>
               <input required value={form.passportId} onChange={(e) => set('passportId', e.target.value)} />
             </label>
             <label className="field">
-              <span className="field-label">護照上的姓名</span>
-              <input required value={form.name} placeholder="例:WANG ZOE" onChange={(e) => set('name', e.target.value)} />
+              <span className="field-label">Name on passport</span>
+              <input required value={form.name} placeholder="e.g. WANG ZOE" onChange={(e) => set('name', e.target.value)} />
             </label>
             <div className="field-row">
               <label className="field">
-                <span className="field-label">國籍(三碼)</span>
+                <span className="field-label">Nationality (3 letters)</span>
                 <input required pattern="[A-Za-z]{3}" maxLength={3} value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
               </label>
               <label className="field">
-                <span className="field-label">年齡</span>
+                <span className="field-label">Age</span>
                 <input required type="number" min={0} max={120} value={form.age} onChange={(e) => set('age', e.target.value)} />
               </label>
             </div>
             <label className="check">
               <input type="checkbox" checked={form.ofacClear} onChange={(e) => set('ofacClear', e.target.checked)} />
-              不在制裁名單上(OFAC 檢查通過)
+              Not on a sanctions list (OFAC check passed)
             </label>
             <FormError message={action.error} />
-            <button className="btn btn-primary btn-block" disabled={action.busy}>{action.busy ? '送出中…' : '送出證明'}</button>
+            <button className="btn btn-primary btn-block" disabled={action.busy}>{action.busy ? 'Submitting…' : 'Submit proof'}</button>
           </form>
         )}
       </div>
